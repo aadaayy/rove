@@ -179,7 +179,8 @@ struct PillButtonStyle: ButtonStyle {
             .foregroundStyle(neutral ? Color.primary : Color.accentColor)
             .padding(.horizontal, 16)
             .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: 44)
-            .background(Capsule().fill(neutral ? Theme.inset : Color.accentColor.opacity(0.15)))
+            // A light wash, so it shows on cards and on the panels inside them.
+            .background(Capsule().fill(neutral ? Color.primary.opacity(0.1) : Color.accentColor.opacity(0.15)))
             .contentShape(Capsule())
             .opacity(configuration.isPressed ? 0.6 : isEnabled ? 1 : 0.4)
     }
