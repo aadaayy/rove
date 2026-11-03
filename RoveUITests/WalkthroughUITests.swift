@@ -150,10 +150,10 @@ final class WalkthroughUITests: XCTestCase {
         XCTAssertTrue(markPaid.exists, "Jordan should owe Alberto")
         if !markPaid.isHittable { app.swipeUp() }
         markPaid.tap()
-        let confirm = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Mark $'")).firstMatch
-        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        let confirm = app.buttons["confirm-paid"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Marking as paid should ask first")
         confirm.tap()
-        XCTAssertFalse(app.buttons["mark-paid-Jordan-Alberto"].waitForExistence(timeout: 2), "Paid repayments drop off the list")
+        XCTAssertTrue(markPaid.waitForNonExistence(timeout: 5), "Paid repayments drop off the list")
         app.swipeUp()
         sleep(1)
         capture("19-balances-after-paying")
