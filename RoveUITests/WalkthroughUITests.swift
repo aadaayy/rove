@@ -195,7 +195,6 @@ final class WalkthroughUITests: XCTestCase {
         XCTAssertTrue(app.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
         sleep(1)
         capture("30-open-duo-trips")
-        app.terminate()
         let shots: [(String, String, String)] = [
             ("Cancún", "overview", "31-open-duo-idea"),
             ("Nashville", "overview", "32-open-duo-overview"),
@@ -208,13 +207,11 @@ final class WalkthroughUITests: XCTestCase {
             XCTAssertTrue(app.buttons["close-trip"].waitForExistence(timeout: 20))
             sleep(part == "plan" ? 3 : 1)
             capture(name)
-            app.terminate()
         }
         for (section, name) in [("groups", "36-open-duo-groups"), ("you", "38-open-duo-profile")] {
             app = launch(["-openDuoPreview", "-section", section])
             sleep(2)
             capture(name)
-            app.terminate()
         }
     }
 
