@@ -153,25 +153,30 @@ struct PlaceCard: View {
     var selected = false
     let onEdit: () -> Void
 
+    /// "10:40 AM · $212 per person, round trip"
+    private var detail: String {
+        var parts: [String] = []
+        if let date = item.date, item.hasTime { parts.append(Formats.time(date)) }
+        if let price = item.priceMinor {
+            parts.append(Money(price, trip.currency).formatted(wholeIfRound: true) + (item.priceNote.isEmpty ? "" : " \(item.priceNote)"))
+        }
+        return parts.joined(separator: " · ")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 IconTile(symbol: item.kind.symbol, color: Theme.color(for: item.kind))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.title).font(.headline).fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 6) {
-                        if let date = item.date, item.hasTime {
-                            Text(Formats.time(date))
-                        }
-                        if let price = item.priceMinor {
-                            if item.date != nil && item.hasTime { Text("·") }
-                            Text(Money(price, trip.currency).formatted(wholeIfRound: true) + (item.priceNote.isEmpty ? "" : " \(item.priceNote)"))
-                                .monospacedDigit()
-                        }
+                    if !detail.isEmpty {
+                        // One line of text, so a long price note wraps under the time.
+                        Text(detail)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
                     if let place = item.place {
                         Text(place.address.isEmpty ? place.name : place.address)
                             .font(.caption).foregroundStyle(.secondary).lineLimit(1)

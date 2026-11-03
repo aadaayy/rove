@@ -117,15 +117,3 @@ extension View {
     }
 }
 
-extension View {
-    /// A bar pinned to the top of a scrolling page. On iOS 26 and later the
-    /// page fades softly under it; before that it gets a plain background.
-    @ViewBuilder
-    func topBar<Bar: View>(@ViewBuilder _ bar: () -> Bar) -> some View {
-        if #available(iOS 26.0, *) {
-            safeAreaBar(edge: .top, spacing: 0) { bar() }
-        } else {
-            safeAreaInset(edge: .top, spacing: 0) { bar().background(Theme.background) }
-        }
-    }
-}

@@ -169,7 +169,7 @@ struct ExpenseFormView: View {
                     }
                 }
 
-                Section("Paid by") {
+                Section {
                     Picker("Paid by", selection: payerBinding) {
                         ForEach(people, id: \.self) { id in
                             Text(id == store.data.currentUserID ? "You" : store.person(id).name).tag(id)

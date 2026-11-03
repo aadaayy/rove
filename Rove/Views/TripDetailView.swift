@@ -30,17 +30,7 @@ struct TripDetailView: View {
         if let trip = store.trip(tripID) {
             GeometryReader { geometry in
                 let wide = geometry.size.width >= Theme.wideWidth
-                Group {
-                    switch tab {
-                    case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
-                    case .plan: PlanTab(trip: trip, wide: wide)
-                    case .expenses: ExpensesTab(trip: trip, wide: wide)
-                    case .balances: BalancesTab(trip: trip, wide: wide)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                // The tabs stay put and the page scrolls softly under them.
-                .topBar {
+                VStack(spacing: 0) {
                     Picker("Section", selection: $tab) {
                         ForEach(TripTab.allCases, id: \.self) { tab in
                             Text(tab.title).tag(tab)
@@ -50,6 +40,23 @@ struct TripDetailView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .accessibilityIdentifier("trip-tabs")
+
+                    Group {
+                        switch tab {
+                        case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
+                        case .plan: PlanTab(trip: trip, wide: wide)
+                        case .expenses: ExpensesTab(trip: trip, wide: wide)
+                        case .balances: BalancesTab(trip: trip, wide: wide)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+                    // Cards fade out under the tabs instead of being cut off.
+                    .overlay(alignment: .top) {
+                        LinearGradient(colors: [Theme.background, Theme.background.opacity(0)], startPoint: .top, endPoint: .bottom)
+                            .frame(height: 14)
+                            .allowsHitTesting(false)
+                    }
                 }
                 .background(Theme.background)
             }
