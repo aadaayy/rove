@@ -261,6 +261,13 @@ final class WalkthroughUITests: XCTestCase {
         XCTAssertTrue(app.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
         sleep(1)
         capture("39-drawn-pro-check")
+
+        // The open Duo drawn on the Pro Max standing up, not on its side, to
+        // see whether the titles at the edge come from the sideways drawing.
+        let duo = launch(["-openDuoPreview"])
+        XCTAssertTrue(duo.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
+        sleep(1)
+        capture("46-duo-drawn-upright")
     }
 
     // MARK: - Helpers

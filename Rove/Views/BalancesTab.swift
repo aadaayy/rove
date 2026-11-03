@@ -3,6 +3,7 @@ import SwiftUI
 /// Who's ahead, who's behind, and the fewest repayments that settle it.
 struct BalancesTab: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
     let wide: Bool
     @State private var confirming: Transfer?
@@ -92,13 +93,17 @@ struct BalancesTab: View {
                     Avatar(person: to, size: 30)
                         .padding(2).background(Circle().fill(Theme.inset))
                 }
-                Text(sentence(transfer))
-                    .font(.subheadline.weight(.semibold))
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 6)
-                Text(Money(transfer.amountMinor, trip.currency).formatted())
-                    .font(.headline).monospacedDigit()
-                    .foregroundStyle(transfer.fromID == me ? Theme.negative : transfer.toID == me ? Theme.positive : .primary)
+                AdaptiveStack(spacing: 2) {
+                    Text(sentence(transfer))
+                        .font(.subheadline.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 6) }
+                    Text(Money(transfer.amountMinor, trip.currency).formatted())
+                        .font(.headline).monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                        .foregroundStyle(transfer.fromID == me ? Theme.negative : transfer.toID == me ? Theme.positive : .primary)
+                }
             }
             Button {
                 confirming = transfer
@@ -128,13 +133,13 @@ struct BalancesTab: View {
             Text("Everyone").font(.headline)
             ForEach(balances) { balance in
                 let size = trip.partySize(of: balance.personID)
-                HStack {
+                AdaptiveStack {
                     PersonRow(person: store.person(balance.personID),
                               title: balance.personID == me ? "You" : store.person(balance.personID).name,
                               subtitle: "Paid \(Money(balance.spent, trip.currency).formatted()) · share \(Money(balance.share, trip.currency).formatted())",
                               partySize: size)
-                    Spacer(minLength: 6)
-                    VStack(alignment: .trailing, spacing: 1) {
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 6) }
+                    VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 1) {
                         Text(balance.net == 0 ? "Even" : Money(abs(balance.net), trip.currency).formatted())
                             .font(.subheadline.weight(.semibold)).monospacedDigit()
                             .foregroundStyle(balance.net > 0 ? Theme.positive : balance.net < 0 ? Theme.negative : .secondary)

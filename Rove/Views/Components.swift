@@ -147,6 +147,23 @@ struct WideButtonStyle: ButtonStyle {
     }
 }
 
+/// Side by side, or one under the other at the largest text sizes so
+/// nothing gets cut off.
+struct AdaptiveStack<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    var horizontalAlignment: HorizontalAlignment = .leading
+    var verticalAlignment: VerticalAlignment = .center
+    var spacing: CGFloat? = nil
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: horizontalAlignment, spacing: spacing))
+            : AnyLayout(HStackLayout(alignment: verticalAlignment, spacing: spacing))
+        layout { content }
+    }
+}
+
 /// A small rounded button, like "Add" or "View on Airbnb". It is drawn at
 /// least 44 points tall, the size Apple asks for, so it's easy to hit.
 struct PillButtonStyle: ButtonStyle {

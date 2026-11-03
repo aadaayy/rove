@@ -95,6 +95,7 @@ struct TripScreen: View {
 
 struct OverviewTab: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
     let wide: Bool
     let showTab: (TripTab) -> Void
@@ -158,17 +159,21 @@ struct OverviewTab: View {
         let member = trip.member(me)
         return VStack(alignment: .leading, spacing: 12) {
             Text(member?.response == nil ? "Are you in?" : "Your answer").font(.headline)
-            HStack(spacing: 8) {
+            AdaptiveStack(spacing: 8) {
                 ForEach(Response.allCases, id: \.self) { response in
                     let selected = member?.response == response
                     Button {
                         store.respond(trip.id, response: response)
                     } label: {
-                        VStack(spacing: 4) {
+                        // A row each at the largest text sizes, so the words fit.
+                        let layout = typeSize.isAccessibilitySize ? AnyLayout(HStackLayout(spacing: 12)) : AnyLayout(VStackLayout(spacing: 4))
+                        layout {
                             Image(systemName: response.symbol).font(.title3).accessibilityHidden(true)
-                            Text(response.title).font(.caption.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                            Text(response.title).font(.caption.weight(.semibold))
+                                .lineLimit(typeSize.isAccessibilitySize ? nil : 1).minimumScaleFactor(0.8)
                         }
-                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, typeSize.isAccessibilitySize ? 16 : 0)
+                        .frame(maxWidth: .infinity, alignment: typeSize.isAccessibilitySize ? .leading : .center)
                         .padding(.vertical, 10)
                         // Only the answer you picked takes its colour.
                         .foregroundStyle(selected ? Color.black : Color.secondary)
@@ -315,7 +320,7 @@ struct PartySizeControl: View {
 
     var body: some View {
         let size = trip.partySize(of: personID)
-        HStack {
+        AdaptiveStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(size == 1 ? "Just me" : "Me + \(size - 1)").font(.subheadline.weight(.semibold))
                 Text("Coming with someone who isn't on Rove? Count them here.").font(.caption).foregroundStyle(.secondary)
@@ -334,6 +339,7 @@ struct PartySizeControl: View {
 /// The likely cost, by category, and what's actually been spent once the trip is on.
 struct EstimateCard: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
 
     var body: some View {
@@ -359,20 +365,22 @@ struct EstimateCard: View {
                 ForEach(estimate.lines) { line in
                     HStack(alignment: .top, spacing: 12) {
                         IconTile(symbol: line.kind.symbol, color: Theme.color(for: line.kind), size: 32)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(line.name).font(.subheadline.weight(.medium))
-                            Text(line.assumption).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 8)
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(Money(line.perPerson, trip.currency).rounded)
-                                .font(.subheadline.weight(.semibold)).monospacedDigit()
-                            if showActual {
-                                let actual = Ledger.actualPerPerson(trip, kind: line.kind)
-                                // Says "over" in words too, so the red isn't the only sign.
-                                Text("\(Money(actual, trip.currency).rounded) spent" + (actual > line.perPerson ? " · over" : ""))
-                                    .font(.caption).monospacedDigit()
-                                    .foregroundStyle(actual > line.perPerson ? Theme.negative : .secondary)
+                        AdaptiveStack(verticalAlignment: .top, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(line.name).font(.subheadline.weight(.medium))
+                                Text(line.assumption).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                            }
+                            if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
+                            VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 2) {
+                                Text(Money(line.perPerson, trip.currency).rounded)
+                                    .font(.subheadline.weight(.semibold)).monospacedDigit()
+                                if showActual {
+                                    let actual = Ledger.actualPerPerson(trip, kind: line.kind)
+                                    // Says "over" in words too, so the red isn't the only sign.
+                                    Text("\(Money(actual, trip.currency).rounded) spent" + (actual > line.perPerson ? " · over" : ""))
+                                        .font(.caption).monospacedDigit()
+                                        .foregroundStyle(actual > line.perPerson ? Theme.negative : .secondary)
+                                }
                             }
                         }
                     }

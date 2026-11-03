@@ -85,6 +85,7 @@ struct TripsView: View {
 /// One trip in the list: name, where and when, who's going and the money.
 struct TripCard: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
 
     var body: some View {
@@ -93,12 +94,12 @@ struct TripCard: View {
         let myResponse = trip.member(store.data.currentUserID)?.response
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline) {
+                AdaptiveStack(verticalAlignment: .firstTextBaseline, spacing: 4) {
                     Text(trip.name)
                         .font(.headline)
                         .foregroundStyle(.primary)
-                        .lineLimit(2)
-                    Spacer(minLength: 8)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
                     status(phase, myResponse: myResponse)
                 }
                 Text("\(trip.destination) · \(Formats.dateRange(trip.startDate, trip.endDate))")
