@@ -139,10 +139,12 @@ struct OverviewTab: View {
                 Text(Formats.countdown(to: trip.startDate, end: trip.endDate)).font(.subheadline).foregroundStyle(.secondary)
             }
             Text(trip.destination).font(.title2.weight(.bold))
-            Label(Formats.dateRange(trip.startDate, trip.endDate) + " · " + Estimator.plural(trip.days, "day"), systemImage: "calendar")
-                .foregroundStyle(.secondary)
-            Label("Organized by \(store.name(trip.organizerID) == "You" ? "you" : store.person(trip.organizerID).name)", systemImage: "person.crop.circle")
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Formats.dateRange(trip.startDate, trip.endDate) + " · " + Estimator.plural(trip.days, "day"))
+                Text("Organized by \(store.name(trip.organizerID) == "You" ? "you" : store.person(trip.organizerID).name)")
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
             if !trip.note.isEmpty {
                 Text(trip.note).padding(.top, 2)
             }
@@ -168,10 +170,11 @@ struct OverviewTab: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .foregroundStyle(selected ? Color.white : Theme.color(for: response))
+                        // Only the answer you picked takes its colour.
+                        .foregroundStyle(selected ? Color.black : Color.secondary)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(selected ? Theme.color(for: response) : Theme.color(for: response).opacity(0.12))
+                                .fill(selected ? Theme.color(for: response) : Theme.inset)
                         )
                     }
                     .buttonStyle(.plain)

@@ -19,8 +19,8 @@ struct PlanTab: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .padding([.leading, .bottom], 16)
-                        .padding(.top, 4)
-                    ScrollView { list.padding(16).padding(.top, -12) }
+                        .padding(.top, 16)
+                    ScrollView { list.padding(16).padding(.top, -4) }
                         .frame(width: 420)
                 }
             } else {
@@ -32,7 +32,6 @@ struct PlanTab: View {
                         list
                     }
                     .padding(16)
-                    .padding(.top, -8)
                 }
             }
         }

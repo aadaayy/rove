@@ -29,7 +29,6 @@ struct BalancesTab: View {
                 }
             }
             .padding(16)
-            .padding(.top, -8)
         }
         .confirmationDialog("Mark as paid?", isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
                             titleVisibility: .visible, presenting: confirming) { transfer in

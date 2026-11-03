@@ -34,7 +34,6 @@ struct ExpensesTab: View {
                 list
             }
             .padding(16)
-            .padding(.top, -8)
         }
         .sheet(isPresented: $adding) { ExpenseFormView(trip: trip, expense: nil, scan: nil) }
         .sheet(item: $editing) { expense in ExpenseFormView(trip: trip, expense: expense, scan: nil) }
@@ -65,7 +64,7 @@ struct ExpensesTab: View {
             Button { adding = true } label: {
                 Label("Add expense", systemImage: "plus")
             }
-            .buttonStyle(WideButtonStyle())
+            .buttonStyle(WideButtonStyle(prominent: false))
             .accessibilityIdentifier("add-expense")
             PhotosPicker(selection: $scanItem, matching: .images) {
                 Label(scanning ? "Reading…" : "Scan receipt", systemImage: "doc.text.viewfinder")
