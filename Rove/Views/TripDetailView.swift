@@ -165,7 +165,7 @@ struct OverviewTab: View {
                         store.respond(trip.id, response: response)
                     } label: {
                         VStack(spacing: 4) {
-                            Image(systemName: response.symbol).font(.title3)
+                            Image(systemName: response.symbol).font(.title3).accessibilityHidden(true)
                             Text(response.title).font(.caption.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
                         }
                         .frame(maxWidth: .infinity)
@@ -182,6 +182,7 @@ struct OverviewTab: View {
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
+            .sensoryFeedback(.selection, trigger: member?.response)
             if member != nil, member?.response != .cantMakeIt {
                 PartySizeControl(trip: trip, personID: me)
             }
@@ -210,8 +211,10 @@ struct OverviewTab: View {
                             }
                         }
                         Spacer()
-                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
                     }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -237,8 +240,10 @@ struct OverviewTab: View {
                 IconTile(symbol: symbol, color: color)
                 Text(text).foregroundStyle(.primary).multilineTextAlignment(.leading)
                 Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
             }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -285,7 +290,7 @@ struct OverviewTab: View {
             Text("Anyone on this idea can turn it into a trip. The plan, expenses and balances open up for everyone.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button {
-                withAnimation { store.makeItATrip(trip.id) }
+                withMotion { store.makeItATrip(trip.id) }
             } label: {
                 Label("Make it a trip", systemImage: "airplane.departure")
             }
@@ -335,7 +340,7 @@ struct EstimateCard: View {
         let estimate = Estimator.estimate(for: trip)
         let myParty = trip.partySize(of: store.data.currentUserID)
         let showActual = trip.stage == .trip && !trip.expenses.isEmpty
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Estimate").font(.headline)
                 Spacer()
@@ -364,7 +369,8 @@ struct EstimateCard: View {
                                 .font(.subheadline.weight(.semibold)).monospacedDigit()
                             if showActual {
                                 let actual = Ledger.actualPerPerson(trip, kind: line.kind)
-                                Text("\(Money(actual, trip.currency).rounded) spent")
+                                // Says "over" in words too, so the red isn't the only sign.
+                                Text("\(Money(actual, trip.currency).rounded) spent" + (actual > line.perPerson ? " · over" : ""))
                                     .font(.caption).monospacedDigit()
                                     .foregroundStyle(actual > line.perPerson ? Theme.negative : .secondary)
                             }

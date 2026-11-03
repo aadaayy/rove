@@ -91,21 +91,21 @@ struct TripCard: View {
         let phase = trip.phase(today: Date())
         let estimate = Estimator.estimate(for: trip)
         let myResponse = trip.member(store.data.currentUserID)?.response
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(trip.name)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(trip.name)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    Spacer(minLength: 8)
+                    status(phase, myResponse: myResponse)
+                }
+                Text("\(trip.destination) · \(Formats.dateRange(trip.startDate, trip.endDate))")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .lineLimit(2)
-                Spacer(minLength: 8)
-                status(phase, myResponse: myResponse)
             }
-            .padding(.bottom, -10)
-            Text("\(trip.destination) · \(Formats.dateRange(trip.startDate, trip.endDate))")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
             HStack(alignment: .lastTextBaseline) {
                 AvatarStack(people: trip.members.filter(\.isComing).map { store.person($0.personID) }, size: 24)
                 Spacer()

@@ -96,7 +96,7 @@ struct ExpensesTab: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("expense-\(expense.title)")
-                    if index < sorted.count - 1 { Divider().padding(.leading, 60) }
+                    if index < sorted.count - 1 { Divider().padding(.leading, 64) }
                 }
             }
             .card(padding: 0)
@@ -145,6 +145,7 @@ struct ExpenseRow: View {
                     Text(expense.title).foregroundStyle(.primary).lineLimit(2)
                     if expense.fromReceipt {
                         Image(systemName: "doc.text.viewfinder").font(.caption).foregroundStyle(.secondary)
+                            .accessibilityLabel("From a receipt")
                     }
                 }
                 Text("\(store.name(expense.payerID)) paid · \(Formats.shortDay(expense.date))")
@@ -166,7 +167,7 @@ struct ExpenseRow: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .contentShape(Rectangle())
     }

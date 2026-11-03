@@ -9,7 +9,7 @@ struct Avatar: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             Circle()
-                .fill(Theme.color(for: person).opacity(0.85))
+                .fill(Theme.color(for: person))
                 .frame(width: size, height: size)
                 .overlay(
                     Text(person.initials)
@@ -70,6 +70,7 @@ struct Chip: View {
             Text(text).font(.caption.weight(.medium)).foregroundStyle(.secondary)
         }
         .lineLimit(1)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -85,6 +86,8 @@ struct IconTile: View {
             .fill(Theme.inset)
             .frame(width: size, height: size)
             .overlay(Image(systemName: symbol).font(.system(size: size * 0.42, weight: .medium)).foregroundStyle(.secondary))
+            // Always beside words that say the same thing.
+            .accessibilityHidden(true)
     }
 }
 
@@ -135,12 +138,33 @@ struct WideButtonStyle: ButtonStyle {
             .font(.body.weight(.semibold))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .foregroundStyle(prominent ? Color.white : Color.accentColor)
+            .foregroundStyle(prominent ? Theme.onAccent : Color.accentColor)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(prominent ? Color.accentColor : Color.accentColor.opacity(0.12))
             )
             .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+/// A small rounded button, like "Add" or "View on Airbnb". It is drawn at
+/// least 44 points tall, the size Apple asks for, so it's easy to hit.
+struct PillButtonStyle: ButtonStyle {
+    /// Grey instead of teal, for the quieter of two actions.
+    var neutral = false
+    var fullWidth = false
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .foregroundStyle(neutral ? Color.primary : Color.accentColor)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: 44)
+            .background(Capsule().fill(neutral ? Theme.inset : Color.accentColor.opacity(0.15)))
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.6 : isEnabled ? 1 : 0.4)
     }
 }
 
@@ -188,9 +212,9 @@ struct PersonRow: View {
         HStack(spacing: 12) {
             Avatar(person: person, size: 34, partySize: partySize)
             VStack(alignment: .leading, spacing: 1) {
-                Text(title ?? person.name).lineLimit(1)
+                Text(title ?? person.name).lineLimit(2)
                 if let subtitle {
-                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
             }
         }

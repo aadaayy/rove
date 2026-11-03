@@ -155,7 +155,7 @@ struct ExpenseFormView: View {
                 }
 
                 Section {
-                    Toggle("Receipt details", isOn: $showDetails.animation())
+                    Toggle("Receipt details", isOn: $showDetails.animation(gentleAnimation))
                     if showDetails {
                         MoneyField(title: "Subtotal", minor: $subtotal, currency: currency)
                         MoneyField(title: "Tax", minor: $tax, currency: currency)

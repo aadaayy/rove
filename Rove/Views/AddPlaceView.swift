@@ -62,10 +62,15 @@ struct AddPlaceView: View {
                 Section {
                     ForEach(draft.links, id: \.self) { link in
                         HStack {
-                            Image(systemName: "link").foregroundStyle(.secondary)
+                            Image(systemName: "link").foregroundStyle(.secondary).accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(ListingLinks.buttonTitle(for: link)).font(.subheadline.weight(.semibold))
                                 Text(link).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        }
+                        .contextMenu {
+                            Button("Remove link", systemImage: "trash", role: .destructive) {
+                                draft.links.removeAll { $0 == link }
                             }
                         }
                     }

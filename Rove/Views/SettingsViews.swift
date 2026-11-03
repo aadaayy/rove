@@ -60,6 +60,13 @@ struct TripSettingsView: View {
                             .fixedSize()
                             .accessibilityLabel("Party size for \(store.person(member.personID).firstName)")
                     }
+                    .contextMenu {
+                        if member.personID != trip.wrappedValue.organizerID {
+                            Button("Take off this trip", systemImage: "person.badge.minus", role: .destructive) {
+                                trip.wrappedValue.members.removeAll { $0.personID == member.personID }
+                            }
+                        }
+                    }
                 }
                 .onDelete { offsets in
                     let organizer = trip.wrappedValue.organizerID
@@ -164,10 +171,18 @@ struct GroupsView: View {
                                         Button("Remove", role: .destructive) { store.removeFromGroup(id, groupID: group.id) }
                                     }
                                 }
+                                // The same as the swipe, for anyone who doesn't swipe.
+                                .contextMenu {
+                                    if id != store.data.currentUserID {
+                                        Button("Remove from \(group.name)", systemImage: "person.badge.minus", role: .destructive) {
+                                            store.removeFromGroup(id, groupID: group.id)
+                                        }
+                                    }
+                                }
                         }
                         ForEach(group.pendingInvites, id: \.self) { name in
                             HStack {
-                                Image(systemName: "envelope.badge").foregroundStyle(.secondary).frame(width: 34)
+                                Image(systemName: "envelope.badge").foregroundStyle(.secondary).frame(width: 34).accessibilityHidden(true)
                                 Text(name)
                                 Spacer()
                                 Text("Invited").font(.caption).foregroundStyle(.secondary)
@@ -197,6 +212,7 @@ struct GroupsView: View {
                     Text("Until accounts are switched on, invites add people right away so you can try trips with them.")
                 }
             }
+            .readableWidth()
             .navigationTitle("Groups")
         }
     }
@@ -243,6 +259,7 @@ struct ProfileView: View {
                     LabeledContent("Receipts", value: "Read on this phone, never kept")
                 }
             }
+            .readableWidth()
             .navigationTitle("You")
             .onAppear { name = store.me.name }
             .onDisappear { store.renameMe(name) }

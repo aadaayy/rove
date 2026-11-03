@@ -226,6 +226,43 @@ final class WalkthroughUITests: XCTestCase {
         capture("37-sideways-plan")
     }
 
+    // MARK: - Largest text
+
+    /// The biggest accessibility text size, on the narrowest screen (the
+    /// folded Duo) and a regular one, to check nothing is cut off or overlaps.
+    @MainActor
+    func test8LargestText() throws {
+        try XCTSkipUnless(Self.device.contains("Duo") || Self.device.hasSuffix("18 Pro"), "Taken on the Duo and the Pro")
+        let big = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL"]
+        var app = launch(big)
+        XCTAssertTrue(app.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
+        capture("40-large-text-trips")
+        let shots: [(String, String, String)] = [
+            ("Cancún", "overview", "41-large-text-idea"),
+            ("Nashville", "overview", "42-large-text-overview"),
+            ("Nashville", "plan", "43-large-text-plan"),
+            ("Nashville", "expenses", "44-large-text-expenses"),
+            ("Nashville", "balances", "45-large-text-balances"),
+        ]
+        for (trip, part, name) in shots {
+            app = launch(big + ["-openTrip", trip, "-tab", part])
+            XCTAssertTrue(app.buttons["close-trip"].waitForExistence(timeout: 20))
+            sleep(part == "plan" ? 3 : 1)
+            capture(name)
+        }
+    }
+
+    /// A Pro screen drawn the same way as the open Duo, to tell what is the
+    /// drawing and what is the app: compare it with the Pro's own 01-trips.
+    @MainActor
+    func test9DrawnCheck() throws {
+        try XCTSkipUnless(Self.device.contains("Pro Max"), "Taken on the Pro Max only")
+        let app = launch(["-previewSize", "402x874"])
+        XCTAssertTrue(app.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
+        sleep(1)
+        capture("39-drawn-pro-check")
+    }
+
     // MARK: - Helpers
 
     @MainActor
