@@ -145,9 +145,10 @@ private struct ReadableWidth: ViewModifier {
 
     func body(content: Content) -> some View {
         // Only on wide screens: on a phone the list keeps its own margins.
+        // The column stays on the left, under the screen's title.
         Group {
             if width > maxWidth + 80 {
-                content.contentMargins(.horizontal, (width - maxWidth) / 2, for: .scrollContent)
+                content.contentMargins(.trailing, width - maxWidth, for: .scrollContent)
             } else {
                 content
             }
