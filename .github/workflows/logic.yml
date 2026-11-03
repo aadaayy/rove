@@ -1,0 +1,16 @@
+# Temporary: logic tests only, replaced by checks.yml.
+name: Logic
+on:
+  push:
+    branches: ['claude/**']
+jobs:
+  logic:
+    runs-on: ubuntu-latest
+    container: swift:6.1
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test 2>&1 | tee logic.log; exit ${PIPESTATUS[0]}
+        shell: bash
+      - if: failure()
+        shell: bash
+        run: grep -E "error:|failed" logic.log | head -40 | while IFS= read -r line; do echo "::error::${line//%/%25}"; done
