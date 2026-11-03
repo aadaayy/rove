@@ -114,7 +114,7 @@ func withMotion(_ change: () -> Void) {
     if UIAccessibility.isReduceMotionEnabled {
         change()
     } else {
-        withAnimation(change)
+        withAnimation(.default, change)
     }
 }
 
