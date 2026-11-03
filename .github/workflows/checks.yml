@@ -151,6 +151,13 @@ jobs:
           PYNAME
           # Simulator screenshots are always upright; turn the sideways ones
           for f in publish/*sideways*.png publish/*open-duo*.png; do sips -r 270 "$f" >/dev/null || echo "::warning title=Not turned::$f"; done
+          # The open Duo is drawn at its own shape on a wider Pro Max; keep only
+          # the Duo's screen, so nothing around it looks like part of the app.
+          for f in publish/*open-duo*.png; do
+            h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/ {print $2}')
+            w=$(( h * 951 / 669 ))
+            sips -c "$h" "$w" "$f" >/dev/null || echo "::warning title=Not cropped::$f"
+          done
           files=(publish/*.png)
           echo "::notice title=Screenshots::${#files[@]} exported on ${{ matrix.phone }}"
 

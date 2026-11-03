@@ -51,17 +51,38 @@ struct ScreenPreview<Content: View>: View {
     let screen: CGSize
     @ViewBuilder var content: Content
 
+    /// Wide and tall enough to count as regular both ways, like the open Duo.
+    private var regular: Bool { screen.width >= 700 && screen.height >= 600 }
+
     var body: some View {
         GeometryReader { geometry in
             let scale = min(geometry.size.width / screen.width, geometry.size.height / screen.height)
             content
                 .padding(.top, 8)
                 .frame(width: screen.width, height: screen.height)
+                // The open Duo is regular width and height, like the real one,
+                // so the screens lay out as they will there.
+                .modifier(RegularSizeClasses(isOn: regular))
                 .clipped()
                 .scaleEffect(scale)
                 .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .background(Color.black)
         .ignoresSafeArea()
+    }
+}
+
+/// Regular width and height, as on the open Duo, for a drawn preview.
+private struct RegularSizeClasses: ViewModifier {
+    let isOn: Bool
+
+    func body(content: Content) -> some View {
+        if isOn {
+            content
+                .environment(\.horizontalSizeClass, .regular)
+                .environment(\.verticalSizeClass, .regular)
+        } else {
+            content
+        }
     }
 }
