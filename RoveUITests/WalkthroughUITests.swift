@@ -150,7 +150,7 @@ final class WalkthroughUITests: XCTestCase {
         XCTAssertTrue(markPaid.exists, "Jordan should owe Alberto")
         if !markPaid.isHittable { app.swipeUp() }
         markPaid.tap()
-        let confirm = app.buttons["confirm-paid"]
+        let confirm = app.buttons["confirm-paid"].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "Marking as paid should ask first")
         confirm.tap()
         XCTAssertTrue(markPaid.waitForNonExistence(timeout: 5), "Paid repayments drop off the list")
