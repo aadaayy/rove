@@ -185,12 +185,12 @@ final class WalkthroughUITests: XCTestCase {
 
     // MARK: - Open iPhone Duo
 
-    /// The open iPhone Duo drawn at its real size and shrunk to fit a
-    /// sideways Pro Max, since the Duo simulator can't be unfolded here.
+    /// The open iPhone Duo drawn at its real size and shrunk to fit across
+    /// an upright Pro Max, since the Duo simulator can't be unfolded here.
+    /// (On a sideways Pro Max the drawing put titles against the edge.)
     @MainActor
     func test6OpenDuo() throws {
         try XCTSkipUnless(Self.device.contains("Pro Max"), "These pictures are taken on the Pro Max only")
-        XCUIDevice.shared.orientation = .landscapeLeft
         var app = launch(["-openDuoPreview"])
         XCTAssertTrue(app.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
         sleep(1)
@@ -261,13 +261,6 @@ final class WalkthroughUITests: XCTestCase {
         XCTAssertTrue(app.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
         sleep(1)
         capture("39-drawn-pro-check")
-
-        // The open Duo drawn on the Pro Max standing up, not on its side, to
-        // see whether the titles at the edge come from the sideways drawing.
-        let duo = launch(["-openDuoPreview"])
-        XCTAssertTrue(duo.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
-        sleep(1)
-        capture("46-duo-drawn-upright")
     }
 
     // MARK: - Helpers

@@ -145,6 +145,7 @@ struct TripMap: View {
 /// A stay, a meal, an activity: time, price, links and directions.
 struct PlaceCard: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(TripStore.self) private var store
     let trip: Trip
     let item: PlanItem
@@ -173,12 +174,12 @@ struct PlaceCard: View {
                         Text(detail)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                            .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if let place = item.place {
                         Text(place.address.isEmpty ? place.name : place.address)
-                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
                     }
                 }
                 Spacer(minLength: 4)

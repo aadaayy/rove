@@ -31,7 +31,7 @@ Later: Supabase accounts and sync, splitting a receipt item by item, push notifi
 
 ## Checks and screenshots
 
-Every push runs the logic tests, then builds the app and walks through every main screen on iPhone Pro Max, iPhone Pro and iPhone Duo simulators, The open Duo is drawn at its real size on the Pro Max, and its screenshots are cropped to the Duo's own screen. Screenshots land on the `screenshots` branch (from main) or `screenshots-<branch>` (from a working branch).
+Every push runs the logic tests, then builds the app and walks through every main screen on iPhone Pro Max, iPhone Pro and iPhone Duo simulators. The open Duo is drawn at its real size across an upright Pro Max, and its screenshots are cropped to the Duo's own screen. The Duo and the Pro are also checked at the largest accessibility text size. Screenshots land on the `screenshots` branch (from main) or `screenshots-<branch>` (from a working branch).
 
 ## Run it on your iPhone (free Apple account)
 
