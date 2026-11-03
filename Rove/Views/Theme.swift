@@ -1,29 +1,30 @@
 import SwiftUI
 import UIKit
 
-/// Rove's look: system greys, white cards, one teal accent.
+/// Rove's look: always dark, quiet greys, one teal accent. Colour is kept
+/// for what it means (owed, paid, your answer), not for decoration.
 enum Theme {
     static let background = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
     static let inset = Color(uiColor: .tertiarySystemGroupedBackground)
     static let accent = Color.accentColor
-    static let positive = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(red: 0.35, green: 0.82, blue: 0.55, alpha: 1)
-        : UIColor(red: 0.10, green: 0.56, blue: 0.30, alpha: 1) })
-    static let negative = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(red: 1.00, green: 0.50, blue: 0.45, alpha: 1)
-        : UIColor(red: 0.80, green: 0.20, blue: 0.16, alpha: 1) })
-    static let warning = Color.orange
+    static let positive = Color(red: 0.35, green: 0.82, blue: 0.55)
+    static let negative = Color(red: 1.00, green: 0.50, blue: 0.45)
+    static let warning = Color(red: 1.00, green: 0.70, blue: 0.30)
+    /// Text on the teal accent. The accent is light in the dark, so white on
+    /// it is too faint to read (2:1); black is 10:1.
+    static let onAccent = Color.black
 
+    /// Deep enough that white initials read at 4.5:1 or better on every one.
     static let avatarColors: [Color] = [
-        Color(red: 0.11, green: 0.55, blue: 0.50),
-        Color(red: 0.85, green: 0.38, blue: 0.33),
+        Color(red: 0.10, green: 0.51, blue: 0.46),
+        Color(red: 0.74, green: 0.33, blue: 0.29),
         Color(red: 0.33, green: 0.42, blue: 0.80),
-        Color(red: 0.80, green: 0.55, blue: 0.13),
+        Color(red: 0.61, green: 0.42, blue: 0.10),
         Color(red: 0.55, green: 0.36, blue: 0.75),
-        Color(red: 0.22, green: 0.60, blue: 0.82),
-        Color(red: 0.45, green: 0.58, blue: 0.25),
-        Color(red: 0.55, green: 0.55, blue: 0.58),
+        Color(red: 0.18, green: 0.48, blue: 0.66),
+        Color(red: 0.38, green: 0.49, blue: 0.21),
+        Color(red: 0.46, green: 0.46, blue: 0.48),
     ]
 
     static func color(for person: Person) -> Color {
@@ -33,7 +34,7 @@ enum Theme {
     static func color(for response: Response?) -> Color {
         switch response {
         case .interested: return positive
-        case .maybe: return .orange
+        case .maybe: return warning
         case .cantMakeIt: return .secondary
         case nil: return .secondary
         }
@@ -107,13 +108,51 @@ enum Formats {
     }
 }
 
+/// Animates a change, unless the person has asked their iPhone for less motion.
+@MainActor
+func withMotion(_ change: () -> Void) {
+    if UIAccessibility.isReduceMotionEnabled {
+        change()
+    } else {
+        withAnimation(.default, change)
+    }
+}
+
+/// The default animation, or none when Reduce Motion is on.
+@MainActor
+var gentleAnimation: Animation? { UIAccessibility.isReduceMotionEnabled ? nil : .default }
+
 extension View {
-    /// A white rounded card on the grey background.
+    /// Keeps lists and forms to a comfortable reading width on wide screens,
+    /// like the open iPhone Duo, instead of running edge to edge.
+    func readableWidth(_ maxWidth: CGFloat = 640) -> some View {
+        modifier(ReadableWidth(maxWidth: maxWidth))
+    }
+
+    /// A rounded card a shade lighter than the background.
     func card(padding: CGFloat = 16) -> some View {
         self
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
+
+private struct ReadableWidth: ViewModifier {
+    let maxWidth: CGFloat
+    @State private var width: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        // Only on wide screens: on a phone the list keeps its own margins.
+        // The column stays on the left, under the screen's title.
+        Group {
+            if width > maxWidth + 80 {
+                content.contentMargins(.trailing, width - maxWidth, for: .scrollContent)
+            } else {
+                content
+            }
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+    }
+}

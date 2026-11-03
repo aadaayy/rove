@@ -18,10 +18,8 @@ struct PollsSection: View {
                 if permission != .none {
                     Button(action: onNewPoll) {
                         Label(permission == .publish ? "New poll" : "Suggest", systemImage: "plus")
-                            .font(.subheadline.weight(.semibold))
                     }
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.capsule)
+                    .buttonStyle(PillButtonStyle())
                     .accessibilityIdentifier("new-poll")
                 }
             }
@@ -29,7 +27,7 @@ struct PollsSection: View {
                 Label("The organizer picks who can post polls on this trip.", systemImage: "lock.fill")
                     .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
             } else if permission == .request {
-                Label("Polls you suggest show once \(store.person(trip.organizerID).firstName) approves them.", systemImage: "checkmark.seal")
+                Label("Polls you suggest show once \(store.person(trip.organizerID).firstName) approves them.", systemImage: "checkmark.seal.fill")
                     .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
             }
             ForEach(pending) { poll in
@@ -70,6 +68,7 @@ struct PollCard: View {
                     HStack(spacing: 10) {
                         Image(systemName: mine ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(mine ? Color.accentColor : Color.secondary)
+                            .accessibilityHidden(true)
                         Text(option.text).foregroundStyle(.primary).lineLimit(2).multilineTextAlignment(.leading)
                         Spacer(minLength: 8)
                         HStack(spacing: -6) {
@@ -84,7 +83,9 @@ struct PollCard: View {
                             .frame(minWidth: 16, alignment: .trailing)
                     }
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 8)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                     .background(alignment: .leading) {
                         GeometryReader { geometry in
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -97,6 +98,10 @@ struct PollCard: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(poll.isClosed)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(option.text)
+                .accessibilityValue("\(option.voterIDs.count) vote\(option.voterIDs.count == 1 ? "" : "s")")
+                .accessibilityAddTraits(mine ? [.isButton, .isSelected] : .isButton)
                 .accessibilityIdentifier("vote-\(option.text)")
             }
             HStack {
@@ -110,14 +115,21 @@ struct PollCard: View {
                         }
                         Button("Delete poll", role: .destructive) { store.deletePoll(poll.id, in: trip.id) }
                     } label: {
-                        Image(systemName: "ellipsis.circle").font(.body)
+                        Image(systemName: "ellipsis")
+                            .font(.body.weight(.semibold))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
+                    .accessibilityLabel("Poll options")
+                    .padding(.vertical, -12)
+                    .padding(.trailing, -12)
                 }
             }
             .font(.caption)
             .foregroundStyle(.secondary)
         }
         .card()
+        .sensoryFeedback(.selection, trigger: poll.options.map(\.voterIDs))
     }
 
     private var subtitle: String {
@@ -149,14 +161,14 @@ struct PendingPollCard: View {
                     Button("Decline") { store.deletePoll(poll.id, in: trip.id) }
                         .buttonStyle(WideButtonStyle(prominent: false))
                         .accessibilityIdentifier("decline-poll")
-                    Button("Approve") { withAnimation { store.approvePoll(poll.id, in: trip.id) } }
+                    Button("Approve") { withMotion { store.approvePoll(poll.id, in: trip.id) } }
                         .buttonStyle(WideButtonStyle())
                         .accessibilityIdentifier("approve-poll")
                 }
             }
         }
         .card()
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.orange.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.orange.opacity(0.5), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
     }
 }
 

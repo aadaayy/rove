@@ -34,7 +34,6 @@ struct ExpensesTab: View {
                 list
             }
             .padding(16)
-            .padding(.top, -8)
         }
         .sheet(isPresented: $adding) { ExpenseFormView(trip: trip, expense: nil, scan: nil) }
         .sheet(item: $editing) { expense in ExpenseFormView(trip: trip, expense: expense, scan: nil) }
@@ -51,7 +50,7 @@ struct ExpensesTab: View {
         let mine = trip.expenses.reduce(Int64(0)) { $0 + ($1.owedInTripCurrency[me] ?? 0) }
         let paid = trip.expenses.filter { $0.payerID == me }.reduce(Int64(0)) { $0 + $1.tripAmountMinor }
         return VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
+            AdaptiveStack(verticalAlignment: .top, spacing: 12) {
                 StatView(value: Money(total, trip.currency).formatted(wholeIfRound: true), caption: "spent by the group")
                 StatView(value: Money(mine, trip.currency).formatted(wholeIfRound: true), caption: "your share")
                 StatView(value: Money(paid, trip.currency).formatted(wholeIfRound: true), caption: "you paid")
@@ -65,7 +64,7 @@ struct ExpensesTab: View {
             Button { adding = true } label: {
                 Label("Add expense", systemImage: "plus")
             }
-            .buttonStyle(WideButtonStyle())
+            .buttonStyle(WideButtonStyle(prominent: false))
             .accessibilityIdentifier("add-expense")
             PhotosPicker(selection: $scanItem, matching: .images) {
                 Label(scanning ? "Reading…" : "Scan receipt", systemImage: "doc.text.viewfinder")
@@ -97,7 +96,7 @@ struct ExpensesTab: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("expense-\(expense.title)")
-                    if index < sorted.count - 1 { Divider().padding(.leading, 60) }
+                    if index < sorted.count - 1 { Divider().padding(.leading, 64) }
                 }
             }
             .card(padding: 0)
@@ -133,41 +132,46 @@ extension ReceiptDraft: Identifiable {
 
 struct ExpenseRow: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
     let expense: Expense
 
     var body: some View {
         let me = store.data.currentUserID
         let myShare = expense.owedInTripCurrency[me] ?? 0
-        HStack(spacing: 12) {
+        let stacked = typeSize.isAccessibilitySize
+        HStack(alignment: stacked ? .top : .center, spacing: 12) {
             IconTile(symbol: expense.kind.symbol, color: Theme.color(for: expense.kind))
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(expense.title).foregroundStyle(.primary).lineLimit(2)
-                    if expense.fromReceipt {
-                        Image(systemName: "doc.text.viewfinder").font(.caption).foregroundStyle(.secondary)
+            AdaptiveStack(spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(expense.title).foregroundStyle(.primary).lineLimit(stacked ? nil : 2)
+                        if expense.fromReceipt {
+                            Image(systemName: "doc.text.viewfinder").font(.caption).foregroundStyle(.secondary)
+                                .accessibilityLabel("From a receipt")
+                        }
                     }
+                    Text("\(store.name(expense.payerID)) paid · \(Formats.shortDay(expense.date))")
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(stacked ? nil : 1)
                 }
-                Text("\(store.name(expense.payerID)) paid · \(Formats.shortDay(expense.date))")
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(expense.amount.formatted()).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(.primary)
-                if expense.amount.currency != trip.currency {
-                    Text(Money(expense.tripAmountMinor, trip.currency).formatted()).font(.caption).monospacedDigit().foregroundStyle(.secondary)
-                } else if expense.payerID == me {
-                    Text("you lent \(Money(expense.tripAmountMinor - myShare, trip.currency).formatted())")
-                        .font(.caption).monospacedDigit().foregroundStyle(Theme.positive)
-                } else if myShare > 0 {
-                    Text("your share \(Money(myShare, trip.currency).formatted())")
-                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
-                } else {
-                    Text("not in this one").font(.caption).foregroundStyle(.secondary)
+                if !stacked { Spacer(minLength: 8) }
+                VStack(alignment: stacked ? .leading : .trailing, spacing: 2) {
+                    Text(expense.amount.formatted()).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(.primary).fixedSize()
+                    if expense.amount.currency != trip.currency {
+                        Text(Money(expense.tripAmountMinor, trip.currency).formatted()).font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                    } else if expense.payerID == me {
+                        Text("you lent \(Money(expense.tripAmountMinor - myShare, trip.currency).formatted())")
+                            .font(.caption).monospacedDigit().foregroundStyle(Theme.positive)
+                    } else if myShare > 0 {
+                        Text("your share \(Money(myShare, trip.currency).formatted())")
+                            .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                    } else {
+                        Text("not in this one").font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .contentShape(Rectangle())
     }

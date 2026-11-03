@@ -3,6 +3,7 @@ import SwiftUI
 /// Who's ahead, who's behind, and the fewest repayments that settle it.
 struct BalancesTab: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
     let wide: Bool
     @State private var confirming: Transfer?
@@ -29,12 +30,12 @@ struct BalancesTab: View {
                 }
             }
             .padding(16)
-            .padding(.top, -8)
         }
+        .sensoryFeedback(.success, trigger: trip.payments.count)
         .confirmationDialog("Mark as paid?", isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
                             titleVisibility: .visible, presenting: confirming) { transfer in
             Button("Mark \(Money(transfer.amountMinor, trip.currency).formatted()) as paid") {
-                withAnimation { store.markPaid(transfer, in: trip.id) }
+                withMotion { store.markPaid(transfer, in: trip.id) }
             }
             .accessibilityIdentifier("confirm-paid")
         } message: { transfer in
@@ -50,12 +51,12 @@ struct BalancesTab: View {
                 .foregroundStyle(.secondary)
             if net != 0 {
                 Text(Money(abs(net), trip.currency).formatted())
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(net > 0 ? Theme.positive : Theme.negative)
                     .accessibilityIdentifier("my-balance")
             } else {
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 40)).foregroundStyle(Theme.positive)
+                Image(systemName: "checkmark.circle.fill").font(.largeTitle).foregroundStyle(Theme.positive).accessibilityHidden(true)
             }
             Text("Across \(Estimator.plural(trip.expenses.count, "expense")) in \(trip.currency).")
                 .font(.footnote).foregroundStyle(.secondary)
@@ -92,21 +93,24 @@ struct BalancesTab: View {
                     Avatar(person: to, size: 30)
                         .padding(2).background(Circle().fill(Theme.inset))
                 }
-                Text(sentence(transfer))
-                    .font(.subheadline.weight(.semibold))
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 6)
-                Text(Money(transfer.amountMinor, trip.currency).formatted())
-                    .font(.headline).monospacedDigit()
-                    .foregroundStyle(transfer.fromID == me ? Theme.negative : transfer.toID == me ? Theme.positive : .primary)
+                AdaptiveStack(spacing: 2) {
+                    Text(sentence(transfer))
+                        .font(.subheadline.weight(.semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 6) }
+                    Text(Money(transfer.amountMinor, trip.currency).formatted())
+                        .font(.headline).monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                        .foregroundStyle(transfer.fromID == me ? Theme.negative : transfer.toID == me ? Theme.positive : .primary)
+                }
             }
             Button {
                 confirming = transfer
             } label: {
-                Text("Mark as paid").font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
+                Text("Mark as paid")
             }
-            .buttonStyle(.bordered)
-            .tint(involvesMe ? Color.accentColor : Color.gray)
+            .buttonStyle(PillButtonStyle(neutral: !involvesMe, fullWidth: true))
             .accessibilityIdentifier("mark-paid-\(from.firstName)-\(to.firstName)")
         }
         .padding(12)
@@ -129,13 +133,13 @@ struct BalancesTab: View {
             Text("Everyone").font(.headline)
             ForEach(balances) { balance in
                 let size = trip.partySize(of: balance.personID)
-                HStack {
+                AdaptiveStack {
                     PersonRow(person: store.person(balance.personID),
                               title: balance.personID == me ? "You" : store.person(balance.personID).name,
                               subtitle: "Paid \(Money(balance.spent, trip.currency).formatted()) · share \(Money(balance.share, trip.currency).formatted())",
                               partySize: size)
-                    Spacer(minLength: 6)
-                    VStack(alignment: .trailing, spacing: 1) {
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 6) }
+                    VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 1) {
                         Text(balance.net == 0 ? "Even" : Money(abs(balance.net), trip.currency).formatted())
                             .font(.subheadline.weight(.semibold)).monospacedDigit()
                             .foregroundStyle(balance.net > 0 ? Theme.positive : balance.net < 0 ? Theme.negative : .secondary)
@@ -156,7 +160,7 @@ struct BalancesTab: View {
                 Text("Paid back").font(.headline)
                 ForEach(trip.payments.sorted { $0.date > $1.date }) { payment in
                     HStack {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.positive)
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.positive).accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(paidSentence(payment.fromID, payment.toID)).font(.subheadline)
                             Text(Formats.shortDay(payment.date)).font(.caption).foregroundStyle(.secondary)
@@ -166,9 +170,15 @@ struct BalancesTab: View {
                         Menu {
                             Button("Undo", role: .destructive) { store.deletePayment(payment.id, in: trip.id) }
                         } label: {
-                            Image(systemName: "ellipsis").frame(width: 28, height: 28)
+                            Image(systemName: "ellipsis")
+                                .font(.body.weight(.semibold))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel("Options for this payment")
+                        .padding(.vertical, -8)
+                        .padding(.trailing, -10)
                     }
                 }
             }

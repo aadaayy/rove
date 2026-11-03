@@ -3,7 +3,7 @@
 #     on Linux (cheap and fast).
 #  2. App build and walk-through: builds the iPhone app and walks every main
 #     screen on iPhone Pro Max, iPhone Pro and iPhone Duo simulators, one Mac
-#     per phone, light and dark, plus the open Duo drawn on the Pro Max.
+#     per phone (the app is always dark), plus the open Duo drawn on the Pro Max.
 #  3. Publish: gathers every phone's screenshots onto the screenshots branch
 #     (from main), or screenshots-<branch> (from a working branch, to review
 #     before merging).
@@ -150,7 +150,15 @@ jobs:
                       print(f"::warning title=Screenshot skipped::{error}")
           PYNAME
           # Simulator screenshots are always upright; turn the sideways ones
-          for f in publish/*sideways*.png publish/*open-duo*.png; do sips -r 270 "$f" >/dev/null || echo "::warning title=Not turned::$f"; done
+          for f in publish/*sideways*.png; do sips -r 270 "$f" >/dev/null || echo "::warning title=Not turned::$f"; done
+          # The open Duo is drawn at its own shape across an upright Pro Max
+          # (drawing it on a sideways phone pushed titles to the edge); keep
+          # only the Duo's screen, so nothing around it looks like the app.
+          for f in publish/*open-duo*.png; do
+            w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/ {print $2}')
+            h=$(( w * 669 / 951 ))
+            sips -c "$h" "$w" "$f" >/dev/null || echo "::warning title=Not cropped::$f"
+          done
           files=(publish/*.png)
           echo "::notice title=Screenshots::${#files[@]} exported on ${{ matrix.phone }}"
 

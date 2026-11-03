@@ -9,7 +9,7 @@ struct Avatar: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             Circle()
-                .fill(Theme.color(for: person).gradient)
+                .fill(Theme.color(for: person))
                 .frame(width: size, height: size)
                 .overlay(
                     Text(person.initials)
@@ -57,26 +57,25 @@ struct AvatarStack: View {
     }
 }
 
-/// A small coloured label, like "Idea" or "Interested".
+/// A short status, like "Interested" or "In 17 days": a coloured dot and
+/// the word, no box around it.
 struct Chip: View {
     let text: String
     var symbol: String? = nil
     var color: Color = .secondary
 
     var body: some View {
-        HStack(spacing: 4) {
-            if let symbol { Image(systemName: symbol).font(.caption2.weight(.semibold)) }
-            Text(text).font(.caption.weight(.semibold))
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(text).font(.caption.weight(.medium)).foregroundStyle(.secondary)
         }
         .lineLimit(1)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .foregroundStyle(color)
-        .background(Capsule().fill(color.opacity(0.14)))
+        .accessibilityElement(children: .combine)
     }
 }
 
-/// A rounded square with an SF Symbol, used for plan items and costs.
+/// An SF Symbol on a quiet square, used for plan items and costs. The
+/// colour is left out on purpose so lists stay calm.
 struct IconTile: View {
     let symbol: String
     let color: Color
@@ -84,9 +83,11 @@ struct IconTile: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-            .fill(color.opacity(0.15))
+            .fill(Theme.inset)
             .frame(width: size, height: size)
-            .overlay(Image(systemName: symbol).font(.system(size: size * 0.42, weight: .semibold)).foregroundStyle(color))
+            .overlay(Image(systemName: symbol).font(.system(size: size * 0.42, weight: .medium)).foregroundStyle(.secondary))
+            // Always beside words that say the same thing.
+            .accessibilityHidden(true)
     }
 }
 
@@ -97,7 +98,7 @@ struct SectionHeader: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title).font(.title3.weight(.semibold))
+            Text(title).font(.headline)
             Spacer()
             if let detail {
                 Text(detail).font(.subheadline).foregroundStyle(.secondary)
@@ -137,12 +138,51 @@ struct WideButtonStyle: ButtonStyle {
             .font(.body.weight(.semibold))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .foregroundStyle(prominent ? Color.white : Color.accentColor)
+            .foregroundStyle(prominent ? Theme.onAccent : Color.accentColor)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(prominent ? Color.accentColor : Color.accentColor.opacity(0.12))
             )
             .opacity(configuration.isPressed ? 0.75 : 1)
+    }
+}
+
+/// Side by side, or one under the other at the largest text sizes so
+/// nothing gets cut off.
+struct AdaptiveStack<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    var horizontalAlignment: HorizontalAlignment = .leading
+    var verticalAlignment: VerticalAlignment = .center
+    var spacing: CGFloat? = nil
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        let layout = typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: horizontalAlignment, spacing: spacing))
+            : AnyLayout(HStackLayout(alignment: verticalAlignment, spacing: spacing))
+        layout { content }
+    }
+}
+
+/// A small rounded button, like "Add" or "View on Airbnb". It is drawn at
+/// least 44 points tall, the size Apple asks for, so it's easy to hit.
+struct PillButtonStyle: ButtonStyle {
+    /// Grey instead of teal, for the quieter of two actions.
+    var neutral = false
+    var fullWidth = false
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .foregroundStyle(neutral ? Color.primary : Color.accentColor)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: 44)
+            // A light wash, so it shows on cards and on the panels inside them.
+            .background(Capsule().fill(neutral ? Color.primary.opacity(0.1) : Color.accentColor.opacity(0.15)))
+            .contentShape(Capsule())
+            .opacity(configuration.isPressed ? 0.6 : isEnabled ? 1 : 0.4)
     }
 }
 
@@ -190,9 +230,9 @@ struct PersonRow: View {
         HStack(spacing: 12) {
             Avatar(person: person, size: 34, partySize: partySize)
             VStack(alignment: .leading, spacing: 1) {
-                Text(title ?? person.name).lineLimit(1)
+                Text(title ?? person.name).lineLimit(2)
                 if let subtitle {
-                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
             }
         }

@@ -19,8 +19,8 @@ struct PlanTab: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .padding([.leading, .bottom], 16)
-                        .padding(.top, 4)
-                    ScrollView { list.padding(16).padding(.top, -12) }
+                        .padding(.top, 16)
+                    ScrollView { list.padding(16).padding(.top, -4) }
                         .frame(width: 420)
                 }
             } else {
@@ -32,7 +32,6 @@ struct PlanTab: View {
                         list
                     }
                     .padding(16)
-                    .padding(.top, -8)
                 }
             }
         }
@@ -65,10 +64,9 @@ struct PlanTab: View {
                 SectionHeader(title: "Itinerary")
                 Button { addingPlace = true } label: {
                     Label("Add", systemImage: "plus")
-                        .font(.subheadline.weight(.semibold))
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
+                .buttonStyle(PillButtonStyle())
+                .accessibilityLabel("Add to the plan")
                 .accessibilityIdentifier("add-place")
             }
             if trip.items.isEmpty {
@@ -83,7 +81,7 @@ struct PlanTab: View {
                     .padding(.horizontal, 4)
                     .padding(.top, 4)
                 ForEach(day.items) { item in
-                    PlaceCard(trip: trip, item: item, selected: selectedItemID == item.id, onEdit: { editing = item })
+                    PlaceCard(trip: trip, item: item, selected: selectedItemID == item.id, onSelect: { selectedItemID = item.id }, onEdit: { editing = item })
                         .onTapGesture { selectedItemID = item.id }
                 }
             }
@@ -94,7 +92,7 @@ struct PlanTab: View {
                     .padding(.horizontal, 4)
                     .padding(.top, 4)
                 ForEach(undated) { item in
-                    PlaceCard(trip: trip, item: item, selected: selectedItemID == item.id, onEdit: { editing = item })
+                    PlaceCard(trip: trip, item: item, selected: selectedItemID == item.id, onSelect: { selectedItemID = item.id }, onEdit: { editing = item })
                         .onTapGesture { selectedItemID = item.id }
                 }
             }
@@ -134,7 +132,7 @@ struct TripMap: View {
         }
         .onChange(of: selectedItemID) {
             guard let id = selectedItemID, let place = trip.items.first(where: { $0.id == id })?.place else { return }
-            withAnimation {
+            withMotion {
                 position = .region(MKCoordinateRegion(
                     center: CLLocationCoordinate2D(latitude: place.latitude, longitude: place.longitude),
                     span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)))
@@ -147,10 +145,12 @@ struct TripMap: View {
 /// A stay, a meal, an activity: time, price, links and directions.
 struct PlaceCard: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(TripStore.self) private var store
     let trip: Trip
     let item: PlanItem
     var selected = false
+    var onSelect: () -> Void = {}
     let onEdit: () -> Void
 
     /// "10:40 AM · $212 per person, round trip"
@@ -174,24 +174,26 @@ struct PlaceCard: View {
                         Text(detail)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                            .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if let place = item.place {
                         Text(place.address.isEmpty ? place.name : place.address)
-                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
                     }
                 }
                 Spacer(minLength: 4)
                 Button(action: onEdit) {
                     Image(systemName: "ellipsis")
                         .font(.body.weight(.semibold))
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
                 .accessibilityLabel("Edit \(item.title)")
+                .padding(.top, -8)
+                .padding(.trailing, -10)
             }
             if !item.notes.isEmpty {
                 Text(item.notes).font(.subheadline).fixedSize(horizontal: false, vertical: true)
@@ -208,11 +210,14 @@ struct PlaceCard: View {
                     .foregroundStyle(.purple)
             }
         }
-        .card(padding: 14)
+        .card()
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(selected ? Theme.color(for: item.kind) : .clear, lineWidth: 2)
         )
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityAction(named: "Show on the map") { onSelect() }
         .accessibilityIdentifier("place-\(item.title)")
     }
 
@@ -224,12 +229,8 @@ struct PlaceCard: View {
                     openURL(url)
                 } label: {
                     Label(ListingLinks.buttonTitle(for: link), systemImage: "arrow.up.right.square")
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
                 }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .tint(Color.accentColor)
+                .buttonStyle(PillButtonStyle())
             }
         }
         if let place = item.place, let url = MapsLinks.directions(to: place) {
@@ -237,12 +238,8 @@ struct PlaceCard: View {
                 openURL(url)
             } label: {
                 Label("Open in Apple Maps", systemImage: "map.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
             }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-            .tint(Color.gray)
+            .buttonStyle(PillButtonStyle(neutral: true))
         }
     }
 }

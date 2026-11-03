@@ -11,72 +11,83 @@ enum TripTab: String, CaseIterable, Hashable {
         case .balances: return "Balances"
         }
     }
+
+    var symbol: String {
+        switch self {
+        case .overview: return "house"
+        case .plan: return "map"
+        case .expenses: return "creditcard"
+        case .balances: return "arrow.left.arrow.right"
+        }
+    }
 }
 
-/// One trip: overview, plan, expenses and balances.
-struct TripDetailView: View {
+/// One trip, over the whole screen: Overview, Plan, Expenses and Balances as
+/// tabs (in the side strip on the iPhone Duo), with Back and the trip's
+/// settings at the top.
+struct TripScreen: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
     let tripID: UUID
-    @State private var tab: TripTab
+    @Binding var tab: TripTab
+    let onClose: () -> Void
     @State private var showingSettings = false
 
-    init(tripID: UUID, initialTab: TripTab = .overview) {
-        self.tripID = tripID
-        _tab = State(initialValue: initialTab)
+    var body: some View {
+        NavigationStack {
+            if let trip = store.trip(tripID) {
+                TabView(selection: $tab) {
+                    ForEach(TripTab.allCases, id: \.self) { part in
+                        Tab(part.title, systemImage: part.symbol, value: part) {
+                            content(part, trip: trip)
+                        }
+                    }
+                }
+                .navigationTitle(trip.name)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: onClose) {
+                            Image(systemName: "chevron.left")
+                        }
+                        .accessibilityIdentifier("close-trip")
+                        .accessibilityLabel("Trips")
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showingSettings = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                        .accessibilityIdentifier("trip-settings")
+                        .accessibilityLabel("Trip settings")
+                    }
+                }
+                .sheet(isPresented: $showingSettings) {
+                    TripSettingsView(tripID: trip.id, onDelete: onClose)
+                }
+            } else {
+                ContentUnavailableView("Trip not found", systemImage: "suitcase", description: Text("It may have been deleted."))
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Trips", action: onClose)
+                        }
+                    }
+            }
+        }
     }
 
-    var body: some View {
-        if let trip = store.trip(tripID) {
-            GeometryReader { geometry in
-                let wide = geometry.size.width >= Theme.wideWidth
-                VStack(spacing: 0) {
-                    Picker("Section", selection: $tab) {
-                        ForEach(TripTab.allCases, id: \.self) { tab in
-                            Text(tab.title).tag(tab)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .accessibilityIdentifier("trip-tabs")
-
-                    Group {
-                        switch tab {
-                        case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
-                        case .plan: PlanTab(trip: trip, wide: wide)
-                        case .expenses: ExpensesTab(trip: trip, wide: wide)
-                        case .balances: BalancesTab(trip: trip, wide: wide)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    // Cards fade out under the tabs instead of being cut off.
-                    .overlay(alignment: .top) {
-                        LinearGradient(colors: [Theme.background, Theme.background.opacity(0)], startPoint: .top, endPoint: .bottom)
-                            .frame(height: 14)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .background(Theme.background)
-            }
-            .navigationTitle(trip.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showingSettings = true } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    .accessibilityIdentifier("trip-settings")
-                    .accessibilityLabel("Trip settings")
+    private func content(_ part: TripTab, trip: Trip) -> some View {
+        GeometryReader { geometry in
+            let wide = geometry.size.width >= Theme.wideWidth
+            Group {
+                switch part {
+                case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
+                case .plan: PlanTab(trip: trip, wide: wide)
+                case .expenses: ExpensesTab(trip: trip, wide: wide)
+                case .balances: BalancesTab(trip: trip, wide: wide)
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                TripSettingsView(tripID: trip.id, onDelete: { dismiss() })
-            }
-        } else {
-            ContentUnavailableView("Trip not found", systemImage: "suitcase", description: Text("It may have been deleted."))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(Theme.background)
     }
 }
 
@@ -84,6 +95,7 @@ struct TripDetailView: View {
 
 struct OverviewTab: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
     let wide: Bool
     let showTab: (TripTab) -> Void
@@ -128,10 +140,12 @@ struct OverviewTab: View {
                 Text(Formats.countdown(to: trip.startDate, end: trip.endDate)).font(.subheadline).foregroundStyle(.secondary)
             }
             Text(trip.destination).font(.title2.weight(.bold))
-            Label(Formats.dateRange(trip.startDate, trip.endDate) + " · " + Estimator.plural(trip.days, "day"), systemImage: "calendar")
-                .foregroundStyle(.secondary)
-            Label("Organized by \(store.name(trip.organizerID) == "You" ? "you" : store.person(trip.organizerID).name)", systemImage: "person.crop.circle")
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Formats.dateRange(trip.startDate, trip.endDate) + " · " + Estimator.plural(trip.days, "day"))
+                Text("Organized by \(store.name(trip.organizerID) == "You" ? "you" : store.person(trip.organizerID).name)")
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
             if !trip.note.isEmpty {
                 Text(trip.note).padding(.top, 2)
             }
@@ -145,22 +159,27 @@ struct OverviewTab: View {
         let member = trip.member(me)
         return VStack(alignment: .leading, spacing: 12) {
             Text(member?.response == nil ? "Are you in?" : "Your answer").font(.headline)
-            HStack(spacing: 8) {
+            AdaptiveStack(spacing: 8) {
                 ForEach(Response.allCases, id: \.self) { response in
                     let selected = member?.response == response
                     Button {
                         store.respond(trip.id, response: response)
                     } label: {
-                        VStack(spacing: 4) {
-                            Image(systemName: response.symbol).font(.title3)
-                            Text(response.title).font(.caption.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                        // A row each at the largest text sizes, so the words fit.
+                        let layout = typeSize.isAccessibilitySize ? AnyLayout(HStackLayout(spacing: 12)) : AnyLayout(VStackLayout(spacing: 4))
+                        layout {
+                            Image(systemName: response.symbol).font(.title3).accessibilityHidden(true)
+                            Text(response.title).font(.caption.weight(.semibold))
+                                .lineLimit(typeSize.isAccessibilitySize ? nil : 1).minimumScaleFactor(0.8)
                         }
-                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, typeSize.isAccessibilitySize ? 16 : 0)
+                        .frame(maxWidth: .infinity, alignment: typeSize.isAccessibilitySize ? .leading : .center)
                         .padding(.vertical, 10)
-                        .foregroundStyle(selected ? Color.white : Theme.color(for: response))
+                        // Only the answer you picked takes its colour.
+                        .foregroundStyle(selected ? Color.black : Color.secondary)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(selected ? Theme.color(for: response) : Theme.color(for: response).opacity(0.12))
+                                .fill(selected ? Theme.color(for: response) : Theme.inset)
                         )
                     }
                     .buttonStyle(.plain)
@@ -168,6 +187,7 @@ struct OverviewTab: View {
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
+            .sensoryFeedback(.selection, trigger: member?.response)
             if member != nil, member?.response != .cantMakeIt {
                 PartySizeControl(trip: trip, personID: me)
             }
@@ -196,8 +216,10 @@ struct OverviewTab: View {
                             }
                         }
                         Spacer()
-                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
                     }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -223,8 +245,10 @@ struct OverviewTab: View {
                 IconTile(symbol: symbol, color: color)
                 Text(text).foregroundStyle(.primary).multilineTextAlignment(.leading)
                 Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary).accessibilityHidden(true)
             }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -271,7 +295,7 @@ struct OverviewTab: View {
             Text("Anyone on this idea can turn it into a trip. The plan, expenses and balances open up for everyone.")
                 .font(.subheadline).foregroundStyle(.secondary)
             Button {
-                withAnimation { store.makeItATrip(trip.id) }
+                withMotion { store.makeItATrip(trip.id) }
             } label: {
                 Label("Make it a trip", systemImage: "airplane.departure")
             }
@@ -296,7 +320,7 @@ struct PartySizeControl: View {
 
     var body: some View {
         let size = trip.partySize(of: personID)
-        HStack {
+        AdaptiveStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(size == 1 ? "Just me" : "Me + \(size - 1)").font(.subheadline.weight(.semibold))
                 Text("Coming with someone who isn't on Rove? Count them here.").font(.caption).foregroundStyle(.secondary)
@@ -315,13 +339,14 @@ struct PartySizeControl: View {
 /// The likely cost, by category, and what's actually been spent once the trip is on.
 struct EstimateCard: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
     let trip: Trip
 
     var body: some View {
         let estimate = Estimator.estimate(for: trip)
         let myParty = trip.partySize(of: store.data.currentUserID)
         let showActual = trip.stage == .trip && !trip.expenses.isEmpty
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Estimate").font(.headline)
                 Spacer()
@@ -340,19 +365,22 @@ struct EstimateCard: View {
                 ForEach(estimate.lines) { line in
                     HStack(alignment: .top, spacing: 12) {
                         IconTile(symbol: line.kind.symbol, color: Theme.color(for: line.kind), size: 32)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(line.name).font(.subheadline.weight(.medium))
-                            Text(line.assumption).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 8)
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text(Money(line.perPerson, trip.currency).rounded)
-                                .font(.subheadline.weight(.semibold)).monospacedDigit()
-                            if showActual {
-                                let actual = Ledger.actualPerPerson(trip, kind: line.kind)
-                                Text("\(Money(actual, trip.currency).rounded) spent")
-                                    .font(.caption).monospacedDigit()
-                                    .foregroundStyle(actual > line.perPerson ? Theme.negative : .secondary)
+                        AdaptiveStack(verticalAlignment: .top, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(line.name).font(.subheadline.weight(.medium))
+                                Text(line.assumption).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                            }
+                            if !typeSize.isAccessibilitySize { Spacer(minLength: 8) }
+                            VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 2) {
+                                Text(Money(line.perPerson, trip.currency).rounded)
+                                    .font(.subheadline.weight(.semibold)).monospacedDigit()
+                                if showActual {
+                                    let actual = Ledger.actualPerPerson(trip, kind: line.kind)
+                                    // Says "over" in words too, so the red isn't the only sign.
+                                    Text("\(Money(actual, trip.currency).rounded) spent" + (actual > line.perPerson ? " · over" : ""))
+                                        .font(.caption).monospacedDigit()
+                                        .foregroundStyle(actual > line.perPerson ? Theme.negative : .secondary)
+                                }
                             }
                         }
                     }

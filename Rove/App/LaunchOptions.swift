@@ -6,8 +6,8 @@ import Foundation
 struct LaunchOptions {
     /// Start from the sample data and save nothing.
     var inMemory = false
-    /// Force dark mode for the dark screenshots.
-    var dark = false
+    /// Which of Trips, Groups or You to start on.
+    var section: String?
     /// Draw the screen at another phone's size (in points), shrunk to fit,
     /// e.g. "-previewSize 951x669" for the open iPhone Duo.
     var previewSize: CGSize?
@@ -24,7 +24,7 @@ struct LaunchOptions {
             return arguments[index + 1]
         }
         inMemory = arguments.contains("-uiTesting")
-        dark = arguments.contains("-dark")
+        section = value(after: "-section")
         openTrip = value(after: "-openTrip")
         tab = value(after: "-tab")
         if arguments.contains("-openDuoPreview") {

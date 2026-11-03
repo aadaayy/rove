@@ -60,6 +60,13 @@ struct TripSettingsView: View {
                             .fixedSize()
                             .accessibilityLabel("Party size for \(store.person(member.personID).firstName)")
                     }
+                    .contextMenu {
+                        if member.personID != trip.wrappedValue.organizerID {
+                            Button("Take off this trip", systemImage: "person.badge.minus", role: .destructive) {
+                                trip.wrappedValue.members.removeAll { $0.personID == member.personID }
+                            }
+                        }
+                    }
                 }
                 .onDelete { offsets in
                     let organizer = trip.wrappedValue.organizerID
@@ -145,7 +152,6 @@ struct TripSettingsView: View {
 /// Your groups: the people you travel with.
 struct GroupsView: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
     @State private var newGroupName = ""
     @State private var inviteNames: [UUID: String] = [:]
 
@@ -165,10 +171,18 @@ struct GroupsView: View {
                                         Button("Remove", role: .destructive) { store.removeFromGroup(id, groupID: group.id) }
                                     }
                                 }
+                                // The same as the swipe, for anyone who doesn't swipe.
+                                .contextMenu {
+                                    if id != store.data.currentUserID {
+                                        Button("Remove from \(group.name)", systemImage: "person.badge.minus", role: .destructive) {
+                                            store.removeFromGroup(id, groupID: group.id)
+                                        }
+                                    }
+                                }
                         }
                         ForEach(group.pendingInvites, id: \.self) { name in
                             HStack {
-                                Image(systemName: "envelope.badge").foregroundStyle(.secondary).frame(width: 34)
+                                Image(systemName: "envelope.badge").foregroundStyle(.secondary).frame(width: 34).accessibilityHidden(true)
                                 Text(name)
                                 Spacer()
                                 Text("Invited").font(.caption).foregroundStyle(.secondary)
@@ -198,11 +212,8 @@ struct GroupsView: View {
                     Text("Until accounts are switched on, invites add people right away so you can try trips with them.")
                 }
             }
+            .readableWidth()
             .navigationTitle("Groups")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-            }
         }
     }
 
@@ -215,7 +226,6 @@ struct GroupsView: View {
 /// You, plus testing tools while there's no server.
 struct ProfileView: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var confirmReset = false
 
@@ -249,17 +259,10 @@ struct ProfileView: View {
                     LabeledContent("Receipts", value: "Read on this phone, never kept")
                 }
             }
+            .readableWidth()
             .navigationTitle("You")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        store.renameMe(name)
-                        dismiss()
-                    }
-                }
-            }
             .onAppear { name = store.me.name }
+            .onDisappear { store.renameMe(name) }
             .confirmationDialog("Start over?", isPresented: $confirmReset, titleVisibility: .visible) {
                 Button("Replace everything with the sample", role: .destructive) {
                     store.resetToSample()
