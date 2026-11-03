@@ -145,7 +145,6 @@ struct TripSettingsView: View {
 /// Your groups: the people you travel with.
 struct GroupsView: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
     @State private var newGroupName = ""
     @State private var inviteNames: [UUID: String] = [:]
 
@@ -199,10 +198,6 @@ struct GroupsView: View {
                 }
             }
             .navigationTitle("Groups")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-            }
         }
     }
 
@@ -215,7 +210,6 @@ struct GroupsView: View {
 /// You, plus testing tools while there's no server.
 struct ProfileView: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var confirmReset = false
 
@@ -250,16 +244,8 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("You")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        store.renameMe(name)
-                        dismiss()
-                    }
-                }
-            }
             .onAppear { name = store.me.name }
+            .onDisappear { store.renameMe(name) }
             .confirmationDialog("Start over?", isPresented: $confirmReset, titleVisibility: .visible) {
                 Button("Replace everything with the sample", role: .destructive) {
                     store.resetToSample()

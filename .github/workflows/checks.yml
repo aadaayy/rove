@@ -3,7 +3,7 @@
 #     on Linux (cheap and fast).
 #  2. App build and walk-through: builds the iPhone app and walks every main
 #     screen on iPhone Pro Max, iPhone Pro and iPhone Duo simulators, one Mac
-#     per phone, light and dark, plus the open Duo drawn on the Pro Max.
+#     per phone (the app is always dark), plus the open Duo drawn on the Pro Max.
 #  3. Publish: gathers every phone's screenshots onto the screenshots branch
 #     (from main), or screenshots-<branch> (from a working branch, to review
 #     before merging).

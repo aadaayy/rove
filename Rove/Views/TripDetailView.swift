@@ -11,72 +11,83 @@ enum TripTab: String, CaseIterable, Hashable {
         case .balances: return "Balances"
         }
     }
+
+    var symbol: String {
+        switch self {
+        case .overview: return "house"
+        case .plan: return "map"
+        case .expenses: return "creditcard"
+        case .balances: return "arrow.left.arrow.right"
+        }
+    }
 }
 
-/// One trip: overview, plan, expenses and balances.
-struct TripDetailView: View {
+/// One trip, over the whole screen: Overview, Plan, Expenses and Balances as
+/// tabs (in the side strip on the iPhone Duo), with Back and the trip's
+/// settings at the top.
+struct TripScreen: View {
     @Environment(TripStore.self) private var store
-    @Environment(\.dismiss) private var dismiss
     let tripID: UUID
-    @State private var tab: TripTab
+    @Binding var tab: TripTab
+    let onClose: () -> Void
     @State private var showingSettings = false
 
-    init(tripID: UUID, initialTab: TripTab = .overview) {
-        self.tripID = tripID
-        _tab = State(initialValue: initialTab)
+    var body: some View {
+        NavigationStack {
+            if let trip = store.trip(tripID) {
+                TabView(selection: $tab) {
+                    ForEach(TripTab.allCases, id: \.self) { part in
+                        Tab(part.title, systemImage: part.symbol, value: part) {
+                            content(part, trip: trip)
+                        }
+                    }
+                }
+                .navigationTitle(trip.name)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: onClose) {
+                            Image(systemName: "chevron.left")
+                        }
+                        .accessibilityIdentifier("close-trip")
+                        .accessibilityLabel("Trips")
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { showingSettings = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                        .accessibilityIdentifier("trip-settings")
+                        .accessibilityLabel("Trip settings")
+                    }
+                }
+                .sheet(isPresented: $showingSettings) {
+                    TripSettingsView(tripID: trip.id, onDelete: onClose)
+                }
+            } else {
+                ContentUnavailableView("Trip not found", systemImage: "suitcase", description: Text("It may have been deleted."))
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Trips", action: onClose)
+                        }
+                    }
+            }
+        }
     }
 
-    var body: some View {
-        if let trip = store.trip(tripID) {
-            GeometryReader { geometry in
-                let wide = geometry.size.width >= Theme.wideWidth
-                VStack(spacing: 0) {
-                    Picker("Section", selection: $tab) {
-                        ForEach(TripTab.allCases, id: \.self) { tab in
-                            Text(tab.title).tag(tab)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .accessibilityIdentifier("trip-tabs")
-
-                    Group {
-                        switch tab {
-                        case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
-                        case .plan: PlanTab(trip: trip, wide: wide)
-                        case .expenses: ExpensesTab(trip: trip, wide: wide)
-                        case .balances: BalancesTab(trip: trip, wide: wide)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    // Cards fade out under the tabs instead of being cut off.
-                    .overlay(alignment: .top) {
-                        LinearGradient(colors: [Theme.background, Theme.background.opacity(0)], startPoint: .top, endPoint: .bottom)
-                            .frame(height: 14)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .background(Theme.background)
-            }
-            .navigationTitle(trip.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showingSettings = true } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    .accessibilityIdentifier("trip-settings")
-                    .accessibilityLabel("Trip settings")
+    private func content(_ part: TripTab, trip: Trip) -> some View {
+        GeometryReader { geometry in
+            let wide = geometry.size.width >= Theme.wideWidth
+            Group {
+                switch part {
+                case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
+                case .plan: PlanTab(trip: trip, wide: wide)
+                case .expenses: ExpensesTab(trip: trip, wide: wide)
+                case .balances: BalancesTab(trip: trip, wide: wide)
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                TripSettingsView(tripID: trip.id, onDelete: { dismiss() })
-            }
-        } else {
-            ContentUnavailableView("Trip not found", systemImage: "suitcase", description: Text("It may have been deleted."))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background(Theme.background)
     }
 }
 

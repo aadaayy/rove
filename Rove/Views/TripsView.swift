@@ -3,9 +3,8 @@ import SwiftUI
 /// Home: ideas people are weighing, trips coming up, and past trips.
 struct TripsView: View {
     @Environment(TripStore.self) private var store
+    @Environment(\.openTrip) private var openTrip
     @State private var showingNewTrip = false
-    @State private var showingPeople = false
-    @State private var showingProfile = false
 
     private var ideas: [Trip] {
         store.trips.filter { $0.phase(today: Date()) == .idea }.sorted { $0.startDate < $1.startDate }
@@ -45,20 +44,6 @@ struct TripsView: View {
         }
         .navigationTitle("Rove")
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button { showingProfile = true } label: {
-                    Avatar(person: store.me, size: 30)
-                }
-                .accessibilityIdentifier("profile")
-                .accessibilityLabel("You")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { showingPeople = true } label: {
-                    Image(systemName: "person.2")
-                }
-                .accessibilityIdentifier("groups")
-                .accessibilityLabel("Groups")
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showingNewTrip = true } label: {
                     Image(systemName: "plus")
@@ -68,14 +53,12 @@ struct TripsView: View {
             }
         }
         .sheet(isPresented: $showingNewTrip) { NewProposalView() }
-        .sheet(isPresented: $showingPeople) { GroupsView() }
-        .sheet(isPresented: $showingProfile) { ProfileView() }
     }
 
     private func grid(_ trips: [Trip], columns: Int) -> some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: columns), spacing: 12) {
             ForEach(trips) { trip in
-                NavigationLink(value: trip.id) {
+                Button { openTrip(trip.id) } label: {
                     TripCard(trip: trip)
                 }
                 .buttonStyle(.plain)
@@ -99,7 +82,7 @@ struct TripsView: View {
     }
 }
 
-/// One trip in the list.
+/// One trip in the list: name, where and when, who's going and the money.
 struct TripCard: View {
     @Environment(TripStore.self) private var store
     let trip: Trip
@@ -108,36 +91,23 @@ struct TripCard: View {
         let phase = trip.phase(today: Date())
         let estimate = Estimator.estimate(for: trip)
         let myResponse = trip.member(store.data.currentUserID)?.response
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(trip.name)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                    Label(trip.destination, systemImage: "mappin.and.ellipse")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(trip.name)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
                 Spacer(minLength: 8)
-                phaseChip(phase, myResponse: myResponse)
+                status(phase, myResponse: myResponse)
             }
-            HStack(spacing: 6) {
-                Image(systemName: "calendar")
-                Text(Formats.dateRange(trip.startDate, trip.endDate))
-                Text("·")
-                Text(Formats.countdown(to: trip.startDate, end: trip.endDate))
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.85)
-
-            Divider()
-
-            HStack(alignment: .center) {
-                AvatarStack(people: trip.members.filter(\.isComing).map { store.person($0.personID) })
+            .padding(.bottom, -10)
+            Text("\(trip.destination) · \(Formats.dateRange(trip.startDate, trip.endDate))")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+            HStack(alignment: .lastTextBaseline) {
+                AvatarStack(people: trip.members.filter(\.isComing).map { store.person($0.personID) }, size: 24)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 1) {
                     if phase == .idea || trip.expenses.isEmpty {
@@ -157,17 +127,17 @@ struct TripCard: View {
     }
 
     @ViewBuilder
-    private func phaseChip(_ phase: Trip.Phase, myResponse: Response?) -> some View {
+    private func status(_ phase: Trip.Phase, myResponse: Response?) -> some View {
         switch phase {
         case .idea:
             if let myResponse {
-                Chip(text: myResponse.title, symbol: myResponse.symbol, color: Theme.color(for: myResponse))
+                Chip(text: myResponse.title, color: Theme.color(for: myResponse))
             } else {
-                Chip(text: "Answer", symbol: "bell.fill", color: .orange)
+                Chip(text: "Answer", color: Theme.warning)
             }
-        case .now: Chip(text: "Now", symbol: "location.fill", color: Theme.positive)
-        case .upcoming: Chip(text: "Trip", symbol: "airplane", color: .accentColor)
-        case .past: Chip(text: "Done", symbol: "checkmark", color: .secondary)
+        case .now: Chip(text: "Now", color: Theme.positive)
+        case .upcoming: Chip(text: Formats.countdown(to: trip.startDate, end: trip.endDate), color: .accentColor)
+        case .past: Chip(text: "Done", color: .secondary)
         }
     }
 }

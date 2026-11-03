@@ -1,19 +1,16 @@
 import SwiftUI
 import UIKit
 
-/// Rove's look: system greys, white cards, one teal accent.
+/// Rove's look: always dark, quiet greys, one teal accent. Colour is kept
+/// for what it means (owed, paid, your answer), not for decoration.
 enum Theme {
     static let background = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
     static let inset = Color(uiColor: .tertiarySystemGroupedBackground)
     static let accent = Color.accentColor
-    static let positive = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(red: 0.35, green: 0.82, blue: 0.55, alpha: 1)
-        : UIColor(red: 0.10, green: 0.56, blue: 0.30, alpha: 1) })
-    static let negative = Color(uiColor: UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(red: 1.00, green: 0.50, blue: 0.45, alpha: 1)
-        : UIColor(red: 0.80, green: 0.20, blue: 0.16, alpha: 1) })
-    static let warning = Color.orange
+    static let positive = Color(red: 0.35, green: 0.82, blue: 0.55)
+    static let negative = Color(red: 1.00, green: 0.50, blue: 0.45)
+    static let warning = Color(red: 1.00, green: 0.70, blue: 0.30)
 
     static let avatarColors: [Color] = [
         Color(red: 0.11, green: 0.55, blue: 0.50),
@@ -33,7 +30,7 @@ enum Theme {
     static func color(for response: Response?) -> Color {
         switch response {
         case .interested: return positive
-        case .maybe: return .orange
+        case .maybe: return warning
         case .cantMakeIt: return .secondary
         case nil: return .secondary
         }
@@ -108,12 +105,12 @@ enum Formats {
 }
 
 extension View {
-    /// A white rounded card on the grey background.
+    /// A rounded card a shade lighter than the background.
     func card(padding: CGFloat = 16) -> some View {
         self
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 

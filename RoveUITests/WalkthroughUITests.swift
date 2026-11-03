@@ -34,7 +34,7 @@ final class WalkthroughUITests: XCTestCase {
         sleep(1)
         capture("04-idea-whos-in")
         XCTAssertTrue(app.buttons["make-it-a-trip"].exists, "Anyone can turn an idea into a trip")
-        goBack(app)
+        closeTrip(app)
 
         // A new idea.
         app.buttons["new-trip"].tap()
@@ -56,7 +56,7 @@ final class WalkthroughUITests: XCTestCase {
     func test2TripOverviewAndPlan() throws {
         let app = launch()
         open(app, "trip-Nashville Long Weekend")
-        XCTAssertTrue(app.segmentedControls["trip-tabs"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["close-trip"].waitForExistence(timeout: 5))
         capture("07-trip-overview")
         app.swipeUp()
         sleep(1)
@@ -172,33 +172,15 @@ final class WalkthroughUITests: XCTestCase {
         sleep(1)
         capture("21-trip-settings-polls")
         tapBarButton(app, "Cancel")
-        goBack(app)
+        closeTrip(app)
 
-        app.buttons["groups"].tap()
+        tab(app, "Groups")
         XCTAssertTrue(app.navigationBars["Groups"].waitForExistence(timeout: 5))
         capture("22-groups")
-        tapBarButton(app, "Done")
 
-        app.buttons["profile"].tap()
+        tab(app, "You")
         XCTAssertTrue(app.navigationBars["You"].waitForExistence(timeout: 5))
         capture("23-profile")
-    }
-
-    // MARK: - Dark mode
-
-    @MainActor
-    func test5DarkMode() throws {
-        var app = launch(["-dark"])
-        XCTAssertTrue(app.buttons["trip-Nashville Long Weekend"].waitForExistence(timeout: 20))
-        capture("24-dark-trips")
-        app.terminate()
-        for (index, part) in ["overview", "plan", "expenses", "balances"].enumerated() {
-            app = launch(["-dark", "-openTrip", "Nashville", "-tab", part])
-            XCTAssertTrue(app.segmentedControls["trip-tabs"].waitForExistence(timeout: 20))
-            sleep(part == "plan" ? 2 : 1)
-            capture("2\(5 + index)-dark-\(part)")
-            app.terminate()
-        }
     }
 
     // MARK: - Open iPhone Duo
@@ -223,15 +205,17 @@ final class WalkthroughUITests: XCTestCase {
         ]
         for (trip, part, name) in shots {
             app = launch(["-openDuoPreview", "-openTrip", trip, "-tab", part])
-            XCTAssertTrue(app.segmentedControls["trip-tabs"].waitForExistence(timeout: 20))
+            XCTAssertTrue(app.buttons["close-trip"].waitForExistence(timeout: 20))
             sleep(part == "plan" ? 3 : 1)
             capture(name)
             app.terminate()
         }
-        app = launch(["-openDuoPreview", "-dark", "-openTrip", "Nashville", "-tab", "plan"])
-        XCTAssertTrue(app.segmentedControls["trip-tabs"].waitForExistence(timeout: 20))
-        sleep(3)
-        capture("36-open-duo-plan-dark")
+        for (section, name) in [("groups", "36-open-duo-groups"), ("you", "38-open-duo-profile")] {
+            app = launch(["-openDuoPreview", "-section", section])
+            sleep(2)
+            capture(name)
+            app.terminate()
+        }
     }
 
     /// The Pro Max on its side uses the same wide layouts.
@@ -240,7 +224,7 @@ final class WalkthroughUITests: XCTestCase {
         try XCTSkipUnless(Self.device.contains("Pro Max"), "Taken on the Pro Max only")
         XCUIDevice.shared.orientation = .landscapeLeft
         let app = launch(["-openTrip", "Nashville", "-tab", "plan"])
-        XCTAssertTrue(app.segmentedControls["trip-tabs"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["close-trip"].waitForExistence(timeout: 20))
         sleep(3)
         capture("37-sideways-plan")
     }
@@ -263,16 +247,14 @@ final class WalkthroughUITests: XCTestCase {
         card.tap()
     }
 
-    /// Back to the previous screen. The back button's type differs between
-    /// phones, so it's found by its identifier.
+    /// Back from a trip to the list. The button sits in the top bar on most
+    /// iPhones and in the side strip on the Duo.
     @MainActor
-    private func goBack(_ app: XCUIApplication) {
-        let back = app.buttons["BackButton"]
-        if back.waitForExistence(timeout: 3) {
-            back.tap()
-        } else {
-            app.navigationBars.buttons.firstMatch.tap()
-        }
+    private func closeTrip(_ app: XCUIApplication) {
+        let close = app.buttons["close-trip"].firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 5), "Back to trips is missing")
+        close.tap()
+        XCTAssertTrue(app.buttons["new-trip"].waitForExistence(timeout: 5), "The trips list should be back")
     }
 
     /// Taps a button in a sheet's top bar. On the folded Duo the bar slides
@@ -288,10 +270,13 @@ final class WalkthroughUITests: XCTestCase {
     }
 
     @MainActor
+    /// Tabs sit in a tab bar on most iPhones and in the side strip on the Duo.
     private func tab(_ app: XCUIApplication, _ title: String) {
-        let button = app.segmentedControls["trip-tabs"].buttons[title]
+        let inBar = app.tabBars.buttons[title]
+        let button = inBar.waitForExistence(timeout: 3) ? inBar : app.buttons[title].firstMatch
         XCTAssertTrue(button.waitForExistence(timeout: 5), "No \(title) tab")
         button.tap()
+        sleep(1)
     }
 
     @MainActor

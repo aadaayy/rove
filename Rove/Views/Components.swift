@@ -9,7 +9,7 @@ struct Avatar: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             Circle()
-                .fill(Theme.color(for: person).gradient)
+                .fill(Theme.color(for: person).opacity(0.85))
                 .frame(width: size, height: size)
                 .overlay(
                     Text(person.initials)
@@ -57,26 +57,24 @@ struct AvatarStack: View {
     }
 }
 
-/// A small coloured label, like "Idea" or "Interested".
+/// A short status, like "Interested" or "In 17 days": a coloured dot and
+/// the word, no box around it.
 struct Chip: View {
     let text: String
     var symbol: String? = nil
     var color: Color = .secondary
 
     var body: some View {
-        HStack(spacing: 4) {
-            if let symbol { Image(systemName: symbol).font(.caption2.weight(.semibold)) }
-            Text(text).font(.caption.weight(.semibold))
+        HStack(spacing: 5) {
+            Circle().fill(color).frame(width: 6, height: 6)
+            Text(text).font(.caption.weight(.medium)).foregroundStyle(.secondary)
         }
         .lineLimit(1)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .foregroundStyle(color)
-        .background(Capsule().fill(color.opacity(0.14)))
     }
 }
 
-/// A rounded square with an SF Symbol, used for plan items and costs.
+/// An SF Symbol on a quiet square, used for plan items and costs. The
+/// colour is left out on purpose so lists stay calm.
 struct IconTile: View {
     let symbol: String
     let color: Color
@@ -84,9 +82,9 @@ struct IconTile: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-            .fill(color.opacity(0.15))
+            .fill(Theme.inset)
             .frame(width: size, height: size)
-            .overlay(Image(systemName: symbol).font(.system(size: size * 0.42, weight: .semibold)).foregroundStyle(color))
+            .overlay(Image(systemName: symbol).font(.system(size: size * 0.42, weight: .medium)).foregroundStyle(.secondary))
     }
 }
 
@@ -97,7 +95,7 @@ struct SectionHeader: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title).font(.title3.weight(.semibold))
+            Text(title).font(.headline)
             Spacer()
             if let detail {
                 Text(detail).font(.subheadline).foregroundStyle(.secondary)
