@@ -88,6 +88,11 @@ final class LedgerTests: XCTestCase {
         t.payments = [Payment(fromID: transfer.fromID, toID: transfer.toID, amountMinor: transfer.amountMinor, date: Date())]
         XCTAssertTrue(Ledger.balances(for: t).allSatisfy { $0.net == 0 })
         XCTAssertTrue(Ledger.suggestedRepayments(for: t).isEmpty)
+        // What each paid and owes for the expense itself doesn't change:
+        // A still paid $50 and A's share is still $25.
+        let first = Ledger.balances(for: t).first { $0.personID == a }!
+        XCTAssertEqual(first.spent, 5000)
+        XCTAssertEqual(first.share, 2500)
     }
 
     // Four people, several expenses: balances always sum to zero and the

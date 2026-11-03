@@ -73,6 +73,15 @@ struct Money: Hashable, Codable, Comparable {
         MoneyFormat.string(self, wholeIfRound: wholeIfRound)
     }
 
+    /// Rounded to the nearest whole unit, "$1,359" for $1,359.29. Estimates
+    /// are rough, so cents only get in the way there.
+    var rounded: String {
+        let scale = Currencies.scale(currency)
+        let half = scale / 2
+        let whole = minor >= 0 ? (minor + half) / scale : -((-minor + half) / scale)
+        return Money(whole * scale, currency).formatted(wholeIfRound: true)
+    }
+
     /// "1234.56" for an editable text field.
     var plainText: String {
         let digits = Currencies.digits(currency)

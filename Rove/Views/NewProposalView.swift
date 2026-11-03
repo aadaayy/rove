@@ -140,11 +140,17 @@ struct TripBasicsSection: View {
 
     var body: some View {
         Section("Trip") {
-            TextField("Where to?", text: $trip.destination)
-                .textContentType(.addressCity)
-                .accessibilityIdentifier("destination")
-            TextField("Name (optional)", text: $trip.name)
-                .accessibilityIdentifier("trip-name")
+            LabeledContent("Where") {
+                TextField("City or place", text: $trip.destination)
+                    .multilineTextAlignment(.trailing)
+                    .textContentType(.addressCity)
+                    .accessibilityIdentifier("destination")
+            }
+            LabeledContent("Name") {
+                TextField("Optional", text: $trip.name)
+                    .multilineTextAlignment(.trailing)
+                    .accessibilityIdentifier("trip-name")
+            }
             DatePicker("Starts", selection: $trip.startDate, displayedComponents: .date)
             DatePicker("Ends", selection: $trip.endDate, in: trip.startDate..., displayedComponents: .date)
             Picker("Currency", selection: $trip.currency) {
@@ -180,7 +186,7 @@ struct BudgetSection: View {
                             Text(line?.assumption ?? "").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text(Money(line?.perPerson ?? 0, trip.currency).formatted(wholeIfRound: true))
+                        Text(Money(line?.perPerson ?? 0, trip.currency).rounded)
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -270,15 +276,15 @@ struct EstimateSummarySection: View {
         let myParty = trip.partySize(of: store.data.currentUserID)
         Section {
             LabeledContent("Per person") {
-                Text(Money(estimate.perPerson, trip.currency).formatted(wholeIfRound: true)).monospacedDigit().fontWeight(.semibold)
+                Text(Money(estimate.perPerson, trip.currency).rounded).monospacedDigit().fontWeight(.semibold)
             }
             if myParty > 1 {
                 LabeledContent("Your party of \(myParty)") {
-                    Text(Money(estimate.perParty(myParty), trip.currency).formatted(wholeIfRound: true)).monospacedDigit()
+                    Text(Money(estimate.perParty(myParty), trip.currency).rounded).monospacedDigit()
                 }
             }
             LabeledContent("Whole group") {
-                Text(Money(estimate.groupTotal, trip.currency).formatted(wholeIfRound: true)).monospacedDigit()
+                Text(Money(estimate.groupTotal, trip.currency).rounded).monospacedDigit()
             }
         } header: {
             Text("Estimate")

@@ -30,7 +30,17 @@ struct TripDetailView: View {
         if let trip = store.trip(tripID) {
             GeometryReader { geometry in
                 let wide = geometry.size.width >= Theme.wideWidth
-                VStack(spacing: 0) {
+                Group {
+                    switch tab {
+                    case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
+                    case .plan: PlanTab(trip: trip, wide: wide)
+                    case .expenses: ExpensesTab(trip: trip, wide: wide)
+                    case .balances: BalancesTab(trip: trip, wide: wide)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // The tabs stay put and the page scrolls softly under them.
+                .topBar {
                     Picker("Section", selection: $tab) {
                         ForEach(TripTab.allCases, id: \.self) { tab in
                             Text(tab.title).tag(tab)
@@ -40,16 +50,6 @@ struct TripDetailView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .accessibilityIdentifier("trip-tabs")
-
-                    Group {
-                        switch tab {
-                        case .overview: OverviewTab(trip: trip, wide: wide, showTab: { tab = $0 })
-                        case .plan: PlanTab(trip: trip, wide: wide)
-                        case .expenses: ExpensesTab(trip: trip, wide: wide)
-                        case .balances: BalancesTab(trip: trip, wide: wide)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .background(Theme.background)
             }
@@ -293,6 +293,7 @@ struct PartySizeControl: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(size == 1 ? "Just me" : "Me + \(size - 1)").font(.subheadline.weight(.semibold))
                 Text("Coming with someone who isn't on Rove? Count them here.").font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             Stepper("Party size", value: Binding(get: { size }, set: { store.setPartySize(trip.id, personID: personID, size: $0) }), in: 1...9)
@@ -320,11 +321,11 @@ struct EstimateCard: View {
                 Text("for \(Estimator.plural(estimate.travelers, "traveler"))").font(.subheadline).foregroundStyle(.secondary)
             }
             HStack(alignment: .top, spacing: 12) {
-                StatView(value: Money(estimate.perPerson, trip.currency).formatted(wholeIfRound: true), caption: "per person")
+                StatView(value: Money(estimate.perPerson, trip.currency).rounded, caption: "per person")
                 if myParty > 1 {
-                    StatView(value: Money(estimate.perParty(myParty), trip.currency).formatted(wholeIfRound: true), caption: "your party of \(myParty)")
+                    StatView(value: Money(estimate.perParty(myParty), trip.currency).rounded, caption: "your party of \(myParty)")
                 } else {
-                    StatView(value: Money(estimate.groupTotal, trip.currency).formatted(wholeIfRound: true), caption: "whole group")
+                    StatView(value: Money(estimate.groupTotal, trip.currency).rounded, caption: "whole group")
                 }
             }
             Divider()
@@ -338,11 +339,11 @@ struct EstimateCard: View {
                         }
                         Spacer(minLength: 8)
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text(Money(line.perPerson, trip.currency).formatted(wholeIfRound: true))
+                            Text(Money(line.perPerson, trip.currency).rounded)
                                 .font(.subheadline.weight(.semibold)).monospacedDigit()
                             if showActual {
                                 let actual = Ledger.actualPerPerson(trip, kind: line.kind)
-                                Text("\(Money(actual, trip.currency).formatted(wholeIfRound: true)) spent")
+                                Text("\(Money(actual, trip.currency).rounded) spent")
                                     .font(.caption).monospacedDigit()
                                     .foregroundStyle(actual > line.perPerson ? Theme.negative : .secondary)
                             }

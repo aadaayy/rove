@@ -36,10 +36,13 @@ struct AvatarStack: View {
     var limit: Int = 5
 
     var body: some View {
-        HStack(spacing: -size * 0.3) {
+        // A small overlap with a ring in the card's colour, so every set of
+        // initials stays readable.
+        HStack(spacing: -size * 0.16) {
             ForEach(people.prefix(limit)) { person in
                 Avatar(person: person, size: size)
-                    .overlay(Circle().stroke(Theme.card, lineWidth: 2))
+                    .padding(2)
+                    .background(Circle().fill(Theme.card))
             }
             if people.count > limit {
                 Text("+\(people.count - limit)")
@@ -47,7 +50,8 @@ struct AvatarStack: View {
                     .foregroundStyle(.secondary)
                     .frame(width: size, height: size)
                     .background(Circle().fill(Theme.inset))
-                    .overlay(Circle().stroke(Theme.card, lineWidth: 2))
+                    .padding(2)
+                    .background(Circle().fill(Theme.card))
             }
         }
     }
@@ -153,8 +157,10 @@ struct MoneyField: View {
 
     var body: some View {
         HStack {
-            Text(title)
-            Spacer(minLength: 12)
+            if !title.isEmpty {
+                Text(title)
+                Spacer(minLength: 12)
+            }
             TextField(Money(0, currency).formatted(), text: $text)
                 .keyboardType(Currencies.digits(currency) == 0 ? .numberPad : .decimalPad)
                 .multilineTextAlignment(.trailing)

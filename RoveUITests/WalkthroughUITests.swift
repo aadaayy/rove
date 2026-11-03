@@ -34,19 +34,19 @@ final class WalkthroughUITests: XCTestCase {
         sleep(1)
         capture("04-idea-whos-in")
         XCTAssertTrue(app.buttons["make-it-a-trip"].exists, "Anyone can turn an idea into a trip")
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        goBack(app)
 
         // A new idea.
         app.buttons["new-trip"].tap()
         let destination = app.textFields["destination"]
         XCTAssertTrue(destination.waitForExistence(timeout: 5))
         destination.tap()
-        destination.typeText("Lisbon, Portugal")
+        destination.typeText("Lisbon, Portugal\n")
         capture("05-new-idea")
         app.swipeUp()
         sleep(1)
         capture("06-new-idea-budget")
-        app.buttons["save-proposal"].tap()
+        tapBarButton(app, "save-proposal")
         XCTAssertTrue(app.buttons["trip-Lisbon trip"].waitForExistence(timeout: 5), "The new idea should be in the list")
     }
 
@@ -90,7 +90,7 @@ final class WalkthroughUITests: XCTestCase {
         link.typeText("https://www.expedia.com/things-to-do/johnny-cash-museum")
         XCTAssertTrue(app.staticTexts["Shows as \u{201C}View on Expedia\u{201D}"].waitForExistence(timeout: 3))
         capture("12-add-to-plan")
-        app.buttons["Cancel"].tap()
+        tapBarButton(app, "Cancel")
 
         // A new poll.
         let newPoll = app.buttons["new-poll"]
@@ -105,7 +105,7 @@ final class WalkthroughUITests: XCTestCase {
         app.textFields["poll-option-2"].tap()
         app.textFields["poll-option-2"].typeText("Biscuit Love")
         capture("13-new-poll")
-        app.buttons["post-poll"].tap()
+        tapBarButton(app, "post-poll")
         XCTAssertTrue(app.staticTexts["Sunday brunch spot?"].waitForExistence(timeout: 5), "The new poll should show")
     }
 
@@ -131,16 +131,17 @@ final class WalkthroughUITests: XCTestCase {
         app.swipeUp()
         sleep(1)
         capture("16-new-expense-split")
-        app.buttons["save-expense"].tap()
+        tapBarButton(app, "save-expense")
         XCTAssertTrue(app.buttons["expense-Taxi from BNA"].waitForExistence(timeout: 5), "The new expense should be listed")
 
-        // A custom split on an existing expense.
+        // A custom split on an existing expense, once the last form has gone.
+        _ = app.textFields["expense-title"].waitForNonExistence(timeout: 5)
         app.buttons["expense-Birthday cake for Maria"].tap()
         XCTAssertTrue(app.textFields["expense-title"].waitForExistence(timeout: 5))
         app.swipeUp()
         sleep(1)
         capture("17-custom-split")
-        app.buttons["Cancel"].tap()
+        tapBarButton(app, "Cancel")
 
         tab(app, "Balances")
         XCTAssertTrue(app.staticTexts["Suggested repayments"].waitForExistence(timeout: 5))
@@ -170,13 +171,13 @@ final class WalkthroughUITests: XCTestCase {
         for _ in 0..<3 { app.swipeUp() }
         sleep(1)
         capture("21-trip-settings-polls")
-        app.buttons["Cancel"].tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        tapBarButton(app, "Cancel")
+        goBack(app)
 
         app.buttons["groups"].tap()
         XCTAssertTrue(app.navigationBars["Groups"].waitForExistence(timeout: 5))
         capture("22-groups")
-        app.buttons["Done"].tap()
+        tapBarButton(app, "Done")
 
         app.buttons["profile"].tap()
         XCTAssertTrue(app.navigationBars["You"].waitForExistence(timeout: 5))
@@ -260,6 +261,30 @@ final class WalkthroughUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 20), "\(identifier) is missing")
         for _ in 0..<4 where !card.isHittable { app.swipeUp() }
         card.tap()
+    }
+
+    /// Back to the previous screen. The back button's type differs between
+    /// phones, so it's found by its identifier.
+    @MainActor
+    private func goBack(_ app: XCUIApplication) {
+        let back = app.buttons["BackButton"]
+        if back.waitForExistence(timeout: 3) {
+            back.tap()
+        } else {
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+    }
+
+    /// Taps a button in a sheet's top bar. On the folded Duo the bar slides
+    /// away as the form scrolls, so scroll back up first.
+    @MainActor
+    private func tapBarButton(_ app: XCUIApplication, _ identifier: String) {
+        let button = app.buttons[identifier]
+        for _ in 0..<6 where !(button.exists && button.isHittable) {
+            app.swipeDown(velocity: .slow)
+        }
+        XCTAssertTrue(button.waitForExistence(timeout: 3), "\(identifier) is missing")
+        button.tap()
     }
 
     @MainActor

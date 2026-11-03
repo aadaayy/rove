@@ -3,6 +3,13 @@ import XCTest
 
 final class EstimateTests: XCTestCase {
     // $50 per meal, 3 meals, 4 days = $600 a person; a party of 2 = $1,200.
+    // Estimates show whole dollars: $1,359.29 reads $1,359 and $185.50 rounds up.
+    func testRoundedMoney() {
+        XCTAssertEqual(Money(135_929, "USD").rounded, "$1,359")
+        XCTAssertEqual(Money(18_550, "USD").rounded, "$186")
+        XCTAssertEqual(Money(41_200, "USD").rounded, "$412")
+    }
+
     func testPerMeal() {
         let food = BudgetCategory(kind: .food, basis: .perMeal, amountMinor: 5000, mealsPerDay: 3)
         let e = Estimator.estimate(categories: [food], days: 4, nights: 3, travelers: 6, currency: "USD")

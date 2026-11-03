@@ -171,8 +171,7 @@ struct PlaceCard: View {
                     }
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .lineLimit(2)
                     if let place = item.place {
                         Text(place.address.isEmpty ? place.name : place.address)
                             .font(.caption).foregroundStyle(.secondary).lineLimit(1)

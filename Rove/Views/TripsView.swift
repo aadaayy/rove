@@ -141,7 +141,7 @@ struct TripCard: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 1) {
                     if phase == .idea || trip.expenses.isEmpty {
-                        Text(Money(estimate.perPerson, trip.currency).formatted(wholeIfRound: true))
+                        Text(Money(estimate.perPerson, trip.currency).rounded)
                             .font(.headline).monospacedDigit()
                         Text("est. per person").font(.caption).foregroundStyle(.secondary)
                     } else {

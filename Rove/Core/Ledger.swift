@@ -92,6 +92,10 @@ struct PersonBalance: Identifiable, Hashable {
     let paid: Int64
     /// Their shares of expenses, plus repayments they received.
     let owed: Int64
+    /// What they paid for the group's expenses alone, repayments left out.
+    var spent: Int64 = 0
+    /// Their share of the expenses alone, repayments left out.
+    var share: Int64 = 0
     /// Positive: the group owes them. Negative: they owe the group.
     var net: Int64 { paid - owed }
 }
@@ -144,6 +148,7 @@ enum Ledger {
             paid[expense.payerID, default: 0] += expense.tripAmountMinor
             for (id, amount) in expense.owedInTripCurrency { owed[id, default: 0] += amount }
         }
+        let spent = paid, share = owed
         for payment in trip.payments {
             paid[payment.fromID, default: 0] += payment.amountMinor
             owed[payment.toID, default: 0] += payment.amountMinor
@@ -152,7 +157,8 @@ enum Ledger {
         for id in Set(paid.keys).union(owed.keys).sorted(by: { $0.uuidString < $1.uuidString }) where !ids.contains(id) {
             ids.append(id)
         }
-        return ids.map { PersonBalance(personID: $0, paid: paid[$0] ?? 0, owed: owed[$0] ?? 0) }
+        return ids.map { PersonBalance(personID: $0, paid: paid[$0] ?? 0, owed: owed[$0] ?? 0,
+                                       spent: spent[$0] ?? 0, share: share[$0] ?? 0) }
     }
 
     /// A short list of repayments that settles everyone: the biggest debtor

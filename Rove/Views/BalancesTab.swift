@@ -38,7 +38,7 @@ struct BalancesTab: View {
             }
             .accessibilityIdentifier("confirm-paid")
         } message: { transfer in
-            Text("\(store.name(transfer.fromID)) paid \(store.name(transfer.toID) == "You" ? "you" : store.name(transfer.toID)) outside the app, like Venmo, Zelle or cash.")
+            Text("\(paidSentence(transfer.fromID, transfer.toID)) outside the app, like Venmo, Zelle or cash.")
         }
     }
 
@@ -86,16 +86,15 @@ struct BalancesTab: View {
         let involvesMe = transfer.fromID == me || transfer.toID == me
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                Avatar(person: from, size: 30)
-                Image(systemName: "arrow.right").font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                Avatar(person: to, size: 30)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("\(store.name(transfer.fromID)) → \(store.name(transfer.toID))")
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                    Text(transfer.fromID == me ? "You pay" : transfer.toID == me ? "Pays you" : "Between them")
-                        .font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: -8) {
+                    Avatar(person: from, size: 30)
+                        .padding(2).background(Circle().fill(Theme.inset))
+                    Avatar(person: to, size: 30)
+                        .padding(2).background(Circle().fill(Theme.inset))
                 }
+                Text(sentence(transfer))
+                    .font(.subheadline.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 6)
                 Text(Money(transfer.amountMinor, trip.currency).formatted())
                     .font(.headline).monospacedDigit()
@@ -114,6 +113,17 @@ struct BalancesTab: View {
         .background(Theme.inset, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
+    /// "Jordan pays you", "You pay Maria", "Priya pays Maria".
+    private func sentence(_ transfer: Transfer) -> String {
+        let to = transfer.toID == me ? "you" : store.name(transfer.toID)
+        return transfer.fromID == me ? "You pay \(to)" : "\(store.name(transfer.fromID)) pays \(to)"
+    }
+
+    /// "Jordan paid you", "You paid Maria".
+    private func paidSentence(_ from: UUID, _ to: UUID) -> String {
+        "\(store.name(from)) paid \(to == me ? "you" : store.name(to))"
+    }
+
     private func everyone(_ balances: [PersonBalance]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Everyone").font(.headline)
@@ -122,7 +132,7 @@ struct BalancesTab: View {
                 HStack {
                     PersonRow(person: store.person(balance.personID),
                               title: balance.personID == me ? "You" : store.person(balance.personID).name,
-                              subtitle: "Paid \(Money(balance.paid, trip.currency).formatted()) · share \(Money(balance.owed, trip.currency).formatted())",
+                              subtitle: "Paid \(Money(balance.spent, trip.currency).formatted()) · share \(Money(balance.share, trip.currency).formatted())",
                               partySize: size)
                     Spacer(minLength: 6)
                     VStack(alignment: .trailing, spacing: 1) {
@@ -148,7 +158,7 @@ struct BalancesTab: View {
                     HStack {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.positive)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("\(store.name(payment.fromID)) paid \(store.name(payment.toID))").font(.subheadline)
+                            Text(paidSentence(payment.fromID, payment.toID)).font(.subheadline)
                             Text(Formats.shortDay(payment.date)).font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()

@@ -279,8 +279,9 @@ struct ExpenseFormView: View {
         case .custom:
             HStack {
                 PersonRow(person: person, title: name, partySize: size)
+                Spacer(minLength: 8)
                 MoneyField(title: "", minor: customBinding(id), currency: currency, identifier: "custom-\(person.firstName)")
-                    .frame(maxWidth: 140)
+                    .frame(width: 110)
             }
         }
     }

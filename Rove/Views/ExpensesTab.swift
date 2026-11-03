@@ -52,9 +52,9 @@ struct ExpensesTab: View {
         let paid = trip.expenses.filter { $0.payerID == me }.reduce(Int64(0)) { $0 + $1.tripAmountMinor }
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                StatView(value: Money(total, trip.currency).formatted(), caption: "spent by the group")
-                StatView(value: Money(mine, trip.currency).formatted(), caption: "your share")
-                StatView(value: Money(paid, trip.currency).formatted(), caption: "you paid")
+                StatView(value: Money(total, trip.currency).formatted(wholeIfRound: true), caption: "spent by the group")
+                StatView(value: Money(mine, trip.currency).formatted(wholeIfRound: true), caption: "your share")
+                StatView(value: Money(paid, trip.currency).formatted(wholeIfRound: true), caption: "you paid")
             }
         }
         .card()
@@ -143,7 +143,7 @@ struct ExpenseRow: View {
             IconTile(symbol: expense.kind.symbol, color: Theme.color(for: expense.kind))
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
-                    Text(expense.title).foregroundStyle(.primary).lineLimit(1)
+                    Text(expense.title).foregroundStyle(.primary).lineLimit(2)
                     if expense.fromReceipt {
                         Image(systemName: "doc.text.viewfinder").font(.caption).foregroundStyle(.secondary)
                     }
