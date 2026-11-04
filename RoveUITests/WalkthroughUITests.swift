@@ -218,7 +218,11 @@ final class WalkthroughUITests: XCTestCase {
             let prefix = round == 0 ? "Flights" : "Line \(round - 1),"
             let line = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", prefix)).firstMatch
             for _ in 0..<4 where !(line.exists && line.isHittable) { app.swipeUp(velocity: .slow) }
-            XCTAssertTrue(line.waitForExistence(timeout: 10), "Round \(round): budget line missing")
+            if !line.waitForExistence(timeout: 10) {
+                for button in app.buttons.allElementsBoundByIndex.prefix(40) { print("BUTTON:", button.label) }
+                XCTFail("Round \(round): budget line missing")
+                return
+            }
             line.tap()
             let name = app.textFields["budget-name"]
             XCTAssertTrue(name.waitForExistence(timeout: 10), "Round \(round): editor didn't open")
