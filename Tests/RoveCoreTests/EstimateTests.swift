@@ -76,4 +76,32 @@ final class EstimateTests: XCTestCase {
         XCTAssertEqual(trip.expectedTravelers, 6)
         XCTAssertEqual(Estimator.estimate(for: trip).perPerson, 140500)
     }
+
+    // A budget line with no typed name goes by its kind, and follows the kind when it changes.
+    func testBudgetLineNameFollowsKind() throws {
+        var line = BudgetCategory(kind: .flights, basis: .perPerson, amountMinor: 35000)
+        XCTAssertEqual(line.name, "")
+        XCTAssertEqual(line.displayName, "Flights")
+        line.kind = .transport
+        XCTAssertEqual(line.displayName, "Getting around")
+        line.name = "Red-eye"
+        XCTAssertEqual(line.displayName, "Red-eye")
+        line.name = "   "
+        XCTAssertEqual(line.displayName, "Getting around")
+        XCTAssertEqual(BudgetCategory(kind: .food, name: "Food", basis: .perMeal, amountMinor: 1).name, "")
+        let e = Estimator.estimate(categories: [line], days: 2, nights: 1, travelers: 2, currency: "USD")
+        XCTAssertEqual(e.lines[0].name, "Getting around")
+    }
+
+    // Older saves stored the kind's name as the name; it reads as no name now.
+    func testOlderSavedNameReadsAsSuggestion() throws {
+        let original = BudgetCategory(kind: .flights, name: "Cheap flights", basis: .perPerson, amountMinor: 100)
+        var json = String(data: try JSONEncoder().encode(original), encoding: .utf8)!
+        json = json.replacingOccurrences(of: "Cheap flights", with: "Flights")
+        let decoded = try JSONDecoder().decode(BudgetCategory.self, from: Data(json.utf8))
+        XCTAssertEqual(decoded.name, "")
+        XCTAssertEqual(decoded.displayName, "Flights")
+        let kept = try JSONDecoder().decode(BudgetCategory.self, from: try JSONEncoder().encode(original))
+        XCTAssertEqual(kept.name, "Cheap flights")
+    }
 }

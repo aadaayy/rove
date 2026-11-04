@@ -103,13 +103,19 @@ struct ExpenseFormView: View {
                 return (nil, sum < amount ? "\(difference) still to assign." : "\(difference) more than the total.")
             }
         }
-        var expense = Expense(id: original?.id ?? UUID(), title: title.trimmingCharacters(in: .whitespaces), date: date, kind: kind,
+        var expense = Expense(id: original?.id ?? UUID(), title: expenseTitle, date: date, kind: kind,
                               payerID: payer, amount: Money(amount, currency),
                               subtotalMinor: showDetails ? subtotal : nil, taxMinor: showDetails ? tax : nil, tipMinor: showDetails ? tip : nil,
                               rate: rate, tripCurrency: trip.currency, splitMode: splitMode, shares: shares,
                               notes: notes, fromReceipt: fromScan, place: original?.place)
         if original?.fromReceipt == true { expense.fromReceipt = true }
         return (expense, nil)
+    }
+
+    /// What was typed, or the kind's name when nothing was.
+    private var expenseTitle: String {
+        let typed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return typed.isEmpty ? kind.title : typed
     }
 
     var body: some View {
