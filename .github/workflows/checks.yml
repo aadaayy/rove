@@ -162,6 +162,11 @@ jobs:
               awk '/^Process: +Rove /{show=1} show{print; n++} n>220{exit}' "$f"
               echo "::endgroup::"
             fi
+            if grep -q "Application, pid" "$f"; then
+              echo "::group::UI tree buttons $f"
+              grep -E "Button|TextField|NavigationBar" "$f" | head -80
+              echo "::endgroup::"
+            fi
           done
 
       - name: Name and turn the screenshots
