@@ -128,6 +128,33 @@ jobs:
             xcrun xcresulttool export attachments --path build/Checks.xcresult --output-path screenshots || true
           fi
           ls -la screenshots
+          # Crash logs aren't published, so print what crashed and where.
+          python3 - <<'PYCRASH'
+          import glob, json
+          for path in glob.glob("screenshots/*.ips"):
+              try:
+                  text = open(path).read()
+                  header, _, body = text.partition("\n")
+                  info = json.loads(body) if body.strip() else {}
+                  name = info.get("procName") or json.loads(header).get("app_name", "?")
+                  print(f"::group::Crash in {name}")
+                  print("exception:", json.dumps(info.get("exception")))
+                  print("termination:", json.dumps(info.get("termination"))[:600])
+                  print("asi:", json.dumps(info.get("asi"))[:600])
+                  images = info.get("usedImages", [])
+                  threads = info.get("threads", [])
+                  faulting = info.get("faultingThread", 0)
+                  for index in sorted({faulting, 0}):
+                      if index >= len(threads):
+                          continue
+                      print(f"thread {index}:")
+                      for frame in threads[index].get("frames", [])[:40]:
+                          image = images[frame.get("imageIndex", 0)].get("name", "?") if frame.get("imageIndex", 0) < len(images) else "?"
+                          print("  ", image, frame.get("symbol", hex(frame.get("imageOffset", 0))))
+                  print("::endgroup::")
+              except Exception as error:
+                  print(f"Couldn't read {path}: {error}")
+          PYCRASH
 
       - name: Name and turn the screenshots
         if: always()
