@@ -215,16 +215,19 @@ final class WalkthroughUITests: XCTestCase {
         app.buttons["new-trip"].tap()
         XCTAssertTrue(app.textFields["destination"].waitForExistence(timeout: 5))
         for round in 0..<12 {
-            let prefix = round == 0 ? "Flights" : "Trip 0"
+            let prefix = round == 0 ? "Flights" : "Line \(round - 1),"
             let line = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", prefix)).firstMatch
             for _ in 0..<4 where !(line.exists && line.isHittable) { app.swipeUp(velocity: .slow) }
             XCTAssertTrue(line.waitForExistence(timeout: 10), "Round \(round): budget line missing")
             line.tap()
             let name = app.textFields["budget-name"]
             XCTAssertTrue(name.waitForExistence(timeout: 10), "Round \(round): editor didn't open")
-            name.tap()
-            name.typeText(round == 0 ? "Trip 0" : " \(round)")
-            if round.isMultiple(of: 3) { name.typeText("\n") }
+            // Tap at the right end, where the text ends, so deletes clear it.
+            name.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: 0.5)).tap()
+            let typed = (name.value as? String) ?? ""
+            let clear = typed == name.placeholderValue ? "" : String(repeating: XCUIKeyboardKey.delete.rawValue, count: typed.count + 2)
+            name.typeText(clear + "Line \(round)")
+            if round.isMultiple(of: 2) { name.typeText("\n") }
             goBack(app)
         }
         capture("50-budget-line-repeat")
