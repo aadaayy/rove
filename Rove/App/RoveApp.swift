@@ -9,7 +9,9 @@ struct RoveApp: App {
         WindowGroup {
             Group {
                 if let size = options.previewSize {
-                    ScreenPreview(screen: size) { RootView(inline: true) }
+                    ScreenPreview(screen: size) {
+                        if options.budgetLine { BudgetLinePreview() } else { RootView(inline: true) }
+                    }
                 } else {
                     RootView()
                 }
@@ -123,6 +125,15 @@ struct ScreenPreview<Content: View>: View {
         }
         .background(Color.black)
         .ignoresSafeArea()
+    }
+}
+
+/// A new budget line's editor on its own, for the drawn open Duo check.
+private struct BudgetLinePreview: View {
+    @State private var line = BudgetCategory(kind: .flights, basis: .perPerson, amountMinor: 35_000)
+
+    var body: some View {
+        NavigationStack { BudgetCategoryEditor(category: $line, currency: "USD") }
     }
 }
 

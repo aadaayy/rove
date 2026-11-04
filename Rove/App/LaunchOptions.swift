@@ -15,6 +15,9 @@ struct LaunchOptions {
     var openTrip: String?
     /// Which part of that trip to show: overview, plan, expenses or balances.
     var tab: String?
+    /// In a drawn preview, show one budget line's editor (sheets can't be
+    /// drawn inside the preview's frame).
+    var budgetLine = false
 
     static let current = LaunchOptions(arguments: ProcessInfo.processInfo.arguments)
 
@@ -27,6 +30,7 @@ struct LaunchOptions {
         section = value(after: "-section")
         openTrip = value(after: "-openTrip")
         tab = value(after: "-tab")
+        budgetLine = arguments.contains("-previewBudgetLine")
         if arguments.contains("-openDuoPreview") {
             previewSize = CGSize(width: 951, height: 669)
         } else if let text = value(after: "-previewSize") {

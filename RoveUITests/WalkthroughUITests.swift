@@ -229,6 +229,10 @@ final class WalkthroughUITests: XCTestCase {
             sleep(2)
             capture(name)
         }
+        app = launch(["-openDuoPreview", "-previewBudgetLine"])
+        XCTAssertTrue(app.textFields["budget-name"].waitForExistence(timeout: 20), "The budget line didn't draw")
+        XCTAssertEqual(app.textFields["budget-name"].placeholderValue, "Flights")
+        capture("36b-open-duo-budget-line")
     }
 
     /// The Pro Max on its side uses the same wide layouts.
