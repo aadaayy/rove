@@ -155,6 +155,14 @@ jobs:
               except Exception as error:
                   print(f"Couldn't read {path}: {error}")
           PYCRASH
+          # A spindump is taken when the app stops answering; print the app's main thread.
+          for f in screenshots/*.txt; do
+            if head -c 4000 "$f" | grep -q "Duration:\|Steps:\|Data Source:"; then
+              echo "::group::Spindump $f"
+              awk '/^Process: +Rove /{show=1} show{print; n++} n>220{exit}' "$f"
+              echo "::endgroup::"
+            fi
+          done
 
       - name: Name and turn the screenshots
         if: always()

@@ -215,7 +215,8 @@ final class WalkthroughUITests: XCTestCase {
         app.buttons["new-trip"].tap()
         XCTAssertTrue(app.textFields["destination"].waitForExistence(timeout: 5))
         for round in 0..<12 {
-            let line = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Flights' OR label BEGINSWITH 'Trip'")).firstMatch
+            let prefix = round == 0 ? "Flights" : "Trip 0"
+            let line = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", prefix)).firstMatch
             for _ in 0..<4 where !(line.exists && line.isHittable) { app.swipeUp(velocity: .slow) }
             XCTAssertTrue(line.waitForExistence(timeout: 10), "Round \(round): budget line missing")
             line.tap()
