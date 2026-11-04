@@ -46,6 +46,22 @@ final class WalkthroughUITests: XCTestCase {
         app.swipeUp()
         sleep(1)
         capture("06-new-idea-budget")
+
+        // A budget line's name is a grey suggestion of its kind, not typed text.
+        let flights = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Flights'")).firstMatch
+        for _ in 0..<4 where !(flights.exists && flights.isHittable) { app.swipeUp(velocity: .slow) }
+        XCTAssertTrue(flights.waitForExistence(timeout: 3), "The Flights budget line is missing")
+        flights.tap()
+        let name = app.textFields["budget-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5), "The budget line should open")
+        XCTAssertEqual(name.placeholderValue, "Flights", "The kind's name should be the grey suggestion")
+        capture("06a-budget-line")
+        name.tap()
+        name.typeText("Red-eye")
+        capture("06b-budget-line-named")
+        goBack(app)
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Red-eye'")).firstMatch.waitForExistence(timeout: 5),
+                      "The typed name should show in the budget")
         tapBarButton(app, "save-proposal")
         XCTAssertTrue(app.buttons["trip-Lisbon trip"].waitForExistence(timeout: 5), "The new idea should be in the list")
     }
@@ -213,6 +229,10 @@ final class WalkthroughUITests: XCTestCase {
             sleep(2)
             capture(name)
         }
+        app = launch(["-openDuoPreview", "-previewBudgetLine"])
+        XCTAssertTrue(app.textFields["budget-name"].waitForExistence(timeout: 20), "The budget line didn't draw")
+        XCTAssertEqual(app.textFields["budget-name"].placeholderValue, "Flights")
+        capture("36b-open-duo-budget-line")
     }
 
     /// The Pro Max on its side uses the same wide layouts.
@@ -309,6 +329,17 @@ final class WalkthroughUITests: XCTestCase {
         let inBar = app.tabBars.buttons[title]
         let button = inBar.waitForExistence(timeout: 3) ? inBar : app.buttons[title].firstMatch
         XCTAssertTrue(button.waitForExistence(timeout: 5), "No \(title) tab")
+        button.tap()
+        sleep(1)
+    }
+
+    /// Back one screen inside a sheet. The back button sits in the top bar,
+    /// or in the side strip on the folded Duo.
+    @MainActor
+    private func goBack(_ app: XCUIApplication) {
+        let inBar = app.navigationBars.buttons.element(boundBy: 0)
+        let button = inBar.exists ? inBar : app.buttons["BackButton"]
+        XCTAssertTrue(button.waitForExistence(timeout: 3), "No back button")
         button.tap()
         sleep(1)
     }

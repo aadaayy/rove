@@ -55,6 +55,8 @@ enum CostBasis: String, Codable, CaseIterable, Hashable {
 struct BudgetCategory: Identifiable, Hashable, Codable {
     var id: UUID
     var kind: CostKind
+    /// The name someone typed. Empty means the line goes by its kind's name,
+    /// so changing the kind changes the name too.
     var name: String
     var basis: CostBasis
     /// The amount in the trip currency, read according to `basis`.
@@ -65,10 +67,33 @@ struct BudgetCategory: Identifiable, Hashable, Codable {
     init(id: UUID = UUID(), kind: CostKind, name: String? = nil, basis: CostBasis, amountMinor: Int64, mealsPerDay: Int = 3) {
         self.id = id
         self.kind = kind
-        self.name = name ?? kind.title
+        self.name = Self.customName(name, kind: kind)
         self.basis = basis
         self.amountMinor = amountMinor
         self.mealsPerDay = max(1, mealsPerDay)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        kind = try container.decode(CostKind.self, forKey: .kind)
+        basis = try container.decode(CostBasis.self, forKey: .basis)
+        amountMinor = try container.decode(Int64.self, forKey: .amountMinor)
+        mealsPerDay = max(1, try container.decode(Int.self, forKey: .mealsPerDay))
+        // Older saves stored the kind's name as the line's name.
+        name = Self.customName(try container.decodeIfPresent(String.self, forKey: .name), kind: kind)
+    }
+
+    /// What the line is called: the typed name, or the kind's name when none was typed.
+    var displayName: String {
+        let typed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return typed.isEmpty ? kind.title : typed
+    }
+
+    /// A name that only repeats the kind's name counts as no name.
+    static func customName(_ name: String?, kind: CostKind) -> String {
+        let typed = (name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return typed == kind.title ? "" : (name ?? "")
     }
 }
 
@@ -124,7 +149,7 @@ enum Estimator {
                 perPerson = divideRounded(total, by: Int64(people))
                 assumption = "\(amount) a night × \(plural(max(1, nights), "night")) ÷ \(plural(people, "traveler"))"
             }
-            return TripEstimate.Line(id: category.id, kind: category.kind, name: category.name, perPerson: perPerson, assumption: assumption)
+            return TripEstimate.Line(id: category.id, kind: category.kind, name: category.displayName, perPerson: perPerson, assumption: assumption)
         }
         return TripEstimate(currency: currency, travelers: people, lines: lines)
     }
@@ -148,11 +173,11 @@ enum Estimator {
     static func defaultCategories(currency: String) -> [BudgetCategory] {
         let unit = Currencies.scale(currency)
         return [
-            BudgetCategory(kind: .stay, name: "Stay", basis: .sharedPerNight, amountMinor: 300 * unit),
-            BudgetCategory(kind: .flights, name: "Flights", basis: .perPerson, amountMinor: 350 * unit),
-            BudgetCategory(kind: .food, name: "Food", basis: .perMeal, amountMinor: 50 * unit, mealsPerDay: 3),
-            BudgetCategory(kind: .activities, name: "Activities", basis: .perPerson, amountMinor: 150 * unit),
-            BudgetCategory(kind: .transport, name: "Getting around", basis: .sharedTotal, amountMinor: 200 * unit),
+            BudgetCategory(kind: .stay, basis: .sharedPerNight, amountMinor: 300 * unit),
+            BudgetCategory(kind: .flights, basis: .perPerson, amountMinor: 350 * unit),
+            BudgetCategory(kind: .food, basis: .perMeal, amountMinor: 50 * unit, mealsPerDay: 3),
+            BudgetCategory(kind: .activities, basis: .perPerson, amountMinor: 150 * unit),
+            BudgetCategory(kind: .transport, basis: .sharedTotal, amountMinor: 200 * unit),
         ]
     }
 }

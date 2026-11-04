@@ -182,7 +182,7 @@ struct BudgetSection: View {
                     HStack(spacing: 12) {
                         IconTile(symbol: category.kind.symbol, color: Theme.color(for: category.kind), size: 32)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(category.name)
+                            Text(category.displayName)
                             Text(line?.assumption ?? "").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -222,7 +222,11 @@ struct BudgetCategoryEditor: View {
     var body: some View {
         Form {
             Section {
-                TextField("Name", text: $category.name)
+                LabeledContent("Name") {
+                    TextField("Name", text: $category.name, prompt: Text(category.kind.title))
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityIdentifier("budget-name")
+                }
                 Picker("Kind", selection: $category.kind) {
                     ForEach(CostKind.allCases, id: \.self) { Label($0.title, systemImage: $0.symbol).tag($0) }
                 }
@@ -239,9 +243,13 @@ struct BudgetCategoryEditor: View {
                 Text(explanation)
             }
         }
-        .navigationTitle(category.name.isEmpty ? "Cost" : category.name)
+        .navigationTitle(category.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { amount = category.amountMinor }
+        .onDisappear {
+            // A name that's only spaces, or the kind's own name, goes back to following the kind.
+            category.name = BudgetCategory.customName(category.name.trimmingCharacters(in: .whitespacesAndNewlines), kind: category.kind)
+        }
         .onChange(of: amount) { category.amountMinor = max(0, amount ?? 0) }
     }
 
