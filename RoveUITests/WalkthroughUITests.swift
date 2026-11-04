@@ -59,6 +59,9 @@ final class WalkthroughUITests: XCTestCase {
         name.tap()
         name.typeText("Red-eye")
         capture("06b-budget-line-named")
+        // Finish typing before leaving, as a person would. Leaving with the
+        // keyboard still up is the one new step before the Duo test that stalled.
+        name.typeText("\n")
         goBack(app)
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Red-eye'")).firstMatch.waitForExistence(timeout: 5),
                       "The typed name should show in the budget")
