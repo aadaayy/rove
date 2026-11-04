@@ -70,6 +70,9 @@ jobs:
 
       - name: Start the simulator
         # Booting while the tests start can time out the test runner, so boot first.
+        # The runner can already have other simulators running, which slows the
+        # walkthrough until the app stops answering, so only this one runs.
+        id: boot
         if: steps.pick.outputs.device != ''
         env:
           DEVICE: ${{ steps.pick.outputs.device }}
@@ -83,9 +86,14 @@ jobs:
               for d in devices:
                   if d["name"] == name:
                       udid = d["udid"]  # newest runtime wins
+          booted = [d for ds in listing["devices"].values() for d in ds if d.get("state") == "Booted"]
+          print("Already running:", ", ".join(f'{d["name"]} ({d["udid"]})' for d in booted) or "none")
+          subprocess.run(["xcrun", "simctl", "shutdown", "all"])
           subprocess.run(["xcrun", "simctl", "boot", udid])
           subprocess.run(["xcrun", "simctl", "bootstatus", udid, "-b"], check=True, timeout=900)
-          print(f"{name} booted")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"udid={udid}\n")
+          print(f"{name} booted ({udid})")
           PYBOOT
 
       - name: Build and walk through the app
@@ -95,7 +103,7 @@ jobs:
           xcodebuild test \
             -project Rove.xcodeproj \
             -scheme Rove \
-            -destination "platform=iOS Simulator,name=${{ steps.pick.outputs.device }}" \
+            -destination "platform=iOS Simulator,id=${{ steps.boot.outputs.udid }}" \
             -resultBundlePath build/Checks.xcresult \
             CODE_SIGNING_ALLOWED=NO
 
