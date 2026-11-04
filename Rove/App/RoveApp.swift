@@ -134,6 +134,7 @@ private struct BudgetLinePreview: View {
 
     var body: some View {
         NavigationStack { BudgetCategoryEditor(category: $line, currency: "USD") }
+            .tint(Color.accentColor)
     }
 }
 
